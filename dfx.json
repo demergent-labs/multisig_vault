@@ -1,0 +1,12 @@
+{
+    "canisters": {
+        "multisig_vault": {
+            "type": "custom",
+            "build": "npx azle multisig_vault",
+            "root": "src",
+            "ts": "src/multisig_vault.ts",
+            "candid": "src/multisig_vault.did",
+            "wasm": "target/wasm32-unknown-unknown/release/multisig_vault.wasm"
+        }
+    }
+}
