@@ -1,16 +1,11 @@
 import {
     Query,
-    Canister,
     CanisterResult,
     UpdateAsync,
     ic,
-    Principal,
-    int8,
     nat64,
     Update,
-    Init,
-    nat8,
-    Variant
+    Principal
 } from 'azle';
 import {
     ICPCanister,
@@ -20,9 +15,9 @@ import { state } from './multisig_vault';
 import { isSigner } from './signers';
 import {
     TransferProposal,
-    ProposeTransferResult
+    DefaultResult,
+    ApproveProposalResult
 } from './types';
-import { generateId } from './utilities';
 import { Management } from 'azle/canisters/management';
 import { sha224 } from 'hash.js';
 
@@ -30,30 +25,29 @@ export function getTransferProposals(): Query<TransferProposal[]> {
     return Object.values(state.transferProposals);
 }
 
-type Res = Variant<{
-    ok?: nat8[];
-    err?: string;
-}>;
-
+// TODO should we check to make sure that we have a sufficient balance? That would be cool
 export function* proposeTransfer(
     destinationAddress: string,
     amount: nat64
-): UpdateAsync<ProposeTransferResult> {
-    // if (isSigner(ic.caller()) === false) {
-    //     return {
-    //         err: 'Only signers can propose a transfer'
-    //     };
-    // }
+): UpdateAsync<DefaultResult> {
+    if (isSigner(ic.caller()) === false) {
+        return {
+            err: 'Only signers can propose a transfer'
+        };
+    }
 
-    const id_result: CanisterResult<string> = yield generateId().next().value;
+    // TODO check that there is enough ICP in the vault to initiate this transfer
+
+    const id_result: CanisterResult<string> = yield ic.canisters.Management<Management>('aaaaa-aa').raw_rand();
 
     if (id_result.ok !== undefined) {
         state.transferProposals[id_result.ok] = {
             id: sha224().update(id_result.ok).digest('hex'),
+            proposer: ic.caller(),
             destinationAddress,
             amount,
-            adopted: false,
-            approvals: []
+            approvals: [],
+            adopted: false
         };
 
         return {
@@ -67,44 +61,49 @@ export function* proposeTransfer(
     }
 }
 
-export function approveTransfer(transferId: string): Update<void> {
+export function approveTransferProposal(transferProposalId: string): Update<ApproveProposalResult> {
     if (isSigner(ic.caller()) === false) {
-        ic.trap('Only a signer can approve a transfer');
+        return {
+            err: 'Only signers can approve a transfer proposal'
+        };
     }
 
-    const transferProposal: TransferProposal = state.transferProposals[transferId];
+    const transferProposal: TransferProposal | undefined = state.transferProposals[transferProposalId];
 
     if (transferProposal === undefined) {
-        ic.trap(`No transfer proposal found for transfer id: ${transferId}`);
+        return {
+            err: `No transfer proposal found for transfer proposal id ${transferProposalId}`
+        };
     }
 
-    // TODO check to make sure the approval hasn't already been done
-    state.transferProposals[transferId] = {
-        ...transferProposal,
-        approvals: [
-            ...transferProposal.approvals,
-            ic.caller()
-        ]
+    if (transferProposal.adopted === true) {
+        return {
+            err: `Transfer proposal ${transferProposalId} already adopted`
+        };
     }
 
-    if (state.transferProposals[transferId].approvals.length >= state.threshold) {
-        // TODO execute transfer
-        // TODO remove transfer request
+    const newApprovals: Principal[] = [
+        ...transferProposal.approvals,
+        ic.caller()
+    ];
 
-        // TODO consider if we should do things mutably or immutably
-        delete state.transferProposals[transferId];
+    state.transferProposals[transferProposalId].approvals = newApprovals;
+
+    if (newApprovals.length < state.threshold) {
+        return {
+            ok: {
+                approved: null
+            }
+        };
     }
+
+    // TODO execute transfer on the ICP ledger
+
+    state.transferProposals[transferProposalId].adopted = true;
+
+    return {
+        ok: {
+            adopted: null
+        }
+    };
 }
-
-// let icpCanister = ic.canisters.ICPCanister<ICPCanister>('ryjl3-tyaaa-aaaaa-aaaba-cai');
-
-// export function* name(): UpdateAsync<string> {
-//     const result: CanisterResult<NameResult> = yield icpCanister.name();
-
-//     if (result.ok !== undefined) {
-//         return result.ok.name;
-//     }
-//     else {
-//         return 'The name could not be found';
-//     }
-// }

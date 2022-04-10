@@ -1,7 +1,9 @@
 import {
     Principal,
     nat8,
-    Init
+    Init,
+    UpdateAsync,
+    nat64
 } from 'azle';
 import {
     State
@@ -29,17 +31,26 @@ export function init(
     state.threshold = threshold;
 }
 
+export function* getVaultBalance(): UpdateAsync<nat64> {
+    // TODO retrieve this canister's balance off of the ledger
+
+    return 0n;
+}
+
 export {
     getSigners,
     getSignerProposals,
     proposeSigner,
-    approveSigner
+    approveSignerProposal
 } from './signers';
 export {
-    getThreshold
+    getThreshold,
+    getThresholdProposals,
+    proposeThreshold,
+    approveThresholdProposal
 } from './threshold';
 export {
     getTransferProposals,
     proposeTransfer,
-    approveTransfer
+    approveTransferProposal
 } from './transfers';

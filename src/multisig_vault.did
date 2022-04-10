@@ -36,7 +36,14 @@ type DefiniteCanisterSettings = record {
     "freezing_threshold": nat;
 };
 
-type ProposeTransferResult = variant { "ok": bool; "err": text };
+type ApproveTransferProposalAction = record {
+    "approved": null;
+    "adopted": null;
+};
+
+type DefaultResult = variant { "ok": bool; "err": text };
+
+type ApproveTransferProposalResult = variant { "ok": ApproveTransferProposalAction; "err": text };
 
 type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
 
@@ -47,6 +54,6 @@ service: (vec principal, nat8) -> {
     "getTransferProposals": () -> (vec TransferProposal) query;
     "proposeSigner": (principal) -> ();
     "approveSigner": (principal) -> (bool);
-    "proposeTransfer": (text, nat64) -> (ProposeTransferResult);
-    "approveTransfer": (text) -> ();
+    "proposeTransfer": (text, nat64) -> (DefaultResult);
+    "approveTransferProposal": (text) -> (ApproveTransferProposalResult);
 }

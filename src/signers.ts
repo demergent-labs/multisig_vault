@@ -1,21 +1,19 @@
 import {
     Query,
-    Canister,
     CanisterResult,
     UpdateAsync,
     ic,
     Principal,
-    int8,
-    nat64,
-    Update,
-    Init
+    Update
 } from 'azle';
-import {
-    ICPCanister,
-    NameResult
-} from './icp';
+import { Management } from 'azle/canisters/management';
+import { sha224 } from 'hash.js';
 import { state } from './multisig_vault';
-import { SignerProposal } from './types';
+import {
+    ApproveProposalResult,
+    DefaultResult,
+    SignerProposal
+} from './types';
 
 export function getSigners(): Query<Principal[]> {
     return Object.values(state.signers);
@@ -25,45 +23,80 @@ export function getSignerProposals(): Query<SignerProposal[]> {
     return Object.values(state.signerProposals);
 }
 
-export function proposeSigner(signer: Principal): Update<void> {
+export function* proposeSigner(signer: Principal): UpdateAsync<DefaultResult> {
     if (isSigner(ic.caller()) === false) {
-        ic.trap('Only a signer can propose a signer');
+        return {
+            err: 'Only signers can propose a signer'
+        };
     }
 
-    // TODO attack vector if the proposals get too big, have a limit
-    state.signerProposals[signer] = {
+    const id_result: CanisterResult<string> = yield ic.canisters.Management<Management>('aaaaa-aa').raw_rand();
+
+    if (id_result.ok === undefined) {
+        return {
+            err: id_result.err
+        };
+    }
+
+    state.signerProposals[id_result.ok] = {
+        id: sha224().update(id_result.ok).digest('hex'),
+        proposer: ic.caller(),
         signer,
-        adopted: false,
-        approvals: []
+        approvals: [],
+        adopted: false
+    };
+
+    return {
+        ok: true
     };
 }
 
-// TODO probably do not use arrays and make sure to think about memory leak attack vectors
-export function approveSigner(signer: Principal): Update<boolean> {
+export function approveSignerProposal(signerProposalId: string): Update<ApproveProposalResult> {
     if (isSigner(ic.caller()) === false) {
-        return false;
-    }
-
-    const signerProposal: SignerProposal = state.signerProposals[signer];
-
-    if (signerProposal !== undefined) {
-        state.signerProposals[signer] = {
-            ...signerProposal,
-            approvals: [
-                ...signerProposal.approvals,
-                ic.caller()
-            ]
+        return {
+            err: 'Only signers can approve a signer proposal'
         };
+    }
 
-        if (state.signerProposals[signer].approvals.length === state.threshold) {
-            state.signers[signerProposal.signer] = signerProposal.signer;
+    const signerProposal: SignerProposal | undefined = state.signerProposals[signerProposalId];
+
+    if (signerProposal === undefined) {
+        return {
+            err: `No signer proposal found for signer proposal id ${signerProposalId}`
+        };
+    }
+
+    if (signerProposal.adopted === true) {
+        return {
+            err: `Signer proposal ${signerProposalId} already adopted`
+        };
+    }
+
+    const newApprovals: Principal[] = [
+        ...signerProposal.approvals,
+        ic.caller()
+    ];
+
+
+    state.signerProposals[signerProposalId].approvals = newApprovals;
+
+    if (newApprovals.length < state.threshold) {
+        return {
+            ok: {
+                approved: null
+            }
+        };
+    }
+
+    state.signers[signerProposal.signer] = signerProposal.signer;
+
+    state.signerProposals[signerProposalId].adopted = true;
+
+    return {
+        ok: {
+            adopted: null
         }
-
-        return true;
-    }
-    else {
-        return false;
-    }
+    };
 }
 
 export function isSigner(signer: Principal): boolean {
