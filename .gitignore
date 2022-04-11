@@ -1,3 +1,5 @@
 .dfx
 target
 node_modules
+build
+internet_identity_test.wasm

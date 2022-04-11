@@ -1,12 +1,22 @@
 {
     "canisters": {
-        "multisig_vault": {
+        "backend": {
             "type": "custom",
-            "build": "npx azle multisig_vault",
-            "root": "src",
-            "ts": "src/multisig_vault.ts",
-            "candid": "src/multisig_vault.did",
-            "wasm": "target/wasm32-unknown-unknown/release/multisig_vault.wasm"
+            "build": "npx azle backend",
+            "root": "canisters/backend",
+            "ts": "canisters/backend/backend.ts",
+            "candid": "canisters/backend/backend.did",
+            "wasm": "target/wasm32-unknown-unknown/release/backend.wasm"
+        },
+        "frontend": {
+            "type": "assets",
+            "source": ["canisters/frontend/build"]
+        },
+        "internet_identity": {
+            "type": "custom",
+            "build": "",
+            "candid": "canisters/internet_identity/internet_identity.did",
+            "wasm": "canisters/internet_identity/internet_identity_test.wasm"
         }
     }
 }

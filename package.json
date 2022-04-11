@@ -1,4 +1,7 @@
 {
+    "scripts": {
+        "build": "cd canisters/frontend && npm install && npm run build"
+    },
     "dependencies": {
         "azle": "0.1.0",
         "hash.js": "1.1.7"

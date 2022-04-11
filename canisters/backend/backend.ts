@@ -9,12 +9,16 @@ import {
     State
 } from './types';
 
+// TODO add a get controllers method and a get cycles method
+// TODO it would be cool if the cycles usage could be calculated somehow
+
 export let state: State = {
     signers: {},
     signerProposals: {},
+    transfers: {},
     transferProposals: {},
-    thresholdProposals: {},
-    threshold: 0
+    threshold: 0,
+    thresholdProposals: {}
 };
 
 export function init(
@@ -41,16 +45,17 @@ export {
     getSigners,
     getSignerProposals,
     proposeSigner,
-    approveSignerProposal
+    voteOnSignerProposal
 } from './signers';
 export {
     getThreshold,
     getThresholdProposals,
     proposeThreshold,
-    approveThresholdProposal
+    voteOnThresholdProposal
 } from './threshold';
 export {
+    getTransfers,
     getTransferProposals,
     proposeTransfer,
-    approveTransferProposal
+    voteOnTransferProposal
 } from './transfers';

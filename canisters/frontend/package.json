@@ -1,0 +1,14 @@
+{
+    "scripts": {
+        "build": "cp -r ../../.dfx/local/canisters candid && snowpack build --polyfill-node"
+    },
+    "dependencies": {
+        "@dfinity/agent": "0.11.0",
+        "@dfinity/auth-client": "0.11.0",
+        "lit-html": "2.2.2",
+        "reduxular": "0.0.6"
+    },
+    "devDependencies": {
+        "snowpack": "3.8.8"
+    }
+}

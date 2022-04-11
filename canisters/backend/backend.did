@@ -1,0 +1,87 @@
+type SignerProposal = record {
+    "id": text;
+    "proposer": principal;
+    "description": text;
+    "signer": principal;
+    "votes": vec Vote;
+    "adopted": bool;
+    "rejected": bool;
+};
+
+type ThresholdProposal = record {
+    "id": text;
+    "proposer": principal;
+    "description": text;
+    "threshold": nat8;
+    "votes": vec Vote;
+    "adopted": bool;
+    "rejected": bool;
+};
+
+type Transfer = record {
+    "id": text;
+    "to": principal;
+    "amount": nat64;
+};
+
+type TransferProposal = record {
+    "id": text;
+    "proposer": principal;
+    "destinationAddress": text;
+    "amount": nat64;
+    "votes": vec Vote;
+    "adopted": bool;
+    "rejected": bool;
+};
+
+type CanisterStatusArgs = record {
+    "canister_id": principal;
+};
+
+type CanisterStatusResult = record {
+    "status": CanisterStatus;
+    "settings": DefiniteCanisterSettings;
+    "module_hash": opt vec nat8;
+    "memory_size": nat;
+    "cycles": nat;
+};
+
+type NameResult = record {
+    "name": text;
+};
+
+type Vote = record {
+    "voter": principal;
+    "adopt": bool;
+};
+
+type DefiniteCanisterSettings = record {
+    "controllers": vec principal;
+    "compute_allocation": nat;
+    "memory_allocation": nat;
+    "freezing_threshold": nat;
+};
+
+type DefaultResult = variant { "ok": bool; "err": text };
+
+type VoteOnProposalResult = variant { "ok": VoteOnProposalAction; "err": text };
+
+type VoteOnProposalAction = variant { "voted": null; "adopted": null; "rejected": null };
+
+type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
+
+service: (vec principal, nat8) -> {
+    "getSigners": () -> (vec principal) query;
+    "getSignerProposals": () -> (vec SignerProposal) query;
+    "getThreshold": () -> (nat8) query;
+    "getThresholdProposals": () -> (vec ThresholdProposal) query;
+    "getTransfers": () -> (vec Transfer) query;
+    "getTransferProposals": () -> (vec TransferProposal) query;
+    "proposeSigner": (text, principal) -> (DefaultResult);
+    "voteOnSignerProposal": (text, bool) -> (VoteOnProposalResult);
+    "proposeThreshold": (text, nat8) -> (DefaultResult);
+    "voteOnThresholdProposal": (text, bool) -> (VoteOnProposalResult);
+    "proposeTransfer": (text, nat64) -> (DefaultResult);
+    "voteOnTransferProposal": (text, bool) -> (VoteOnProposalResult);
+    "getVaultBalance": () -> (nat64);
+}
