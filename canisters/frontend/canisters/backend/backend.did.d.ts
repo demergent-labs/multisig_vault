@@ -1,6 +1,5 @@
 import type { Principal } from '@dfinity/principal';
-export interface AccountBalanceArgs { 'account' : AccountIdentifier }
-export type AccountIdentifier = Array<number>;
+export interface AccountBalanceArgs { 'account' : Array<number> }
 export type CanisterStatus = { 'stopped' : null } |
   { 'stopping' : null } |
   { 'running' : null };
@@ -39,17 +38,38 @@ export interface ThresholdProposal {
   'proposer' : Principal,
   'adopted' : boolean,
 }
+export interface TimeStamp { 'timestamp_nanos' : bigint }
 export interface Tokens { 'e8s' : bigint }
 export interface Transfer { 'id' : string, 'to' : Principal, 'amount' : bigint }
+export interface TransferArgs {
+  'to' : Array<number>,
+  'fee' : Tokens,
+  'memo' : bigint,
+  'from_subaccount' : [] | [Array<number>],
+  'created_at_time' : [] | [TimeStamp],
+  'amount' : Tokens,
+}
+export type TransferError = {
+    'TxTooOld' : { 'allowed_window_nanos' : bigint }
+  } |
+  { 'BadFee' : { 'expected_fee' : Tokens } } |
+  { 'TxDuplicate' : { 'duplicate_of' : bigint } } |
+  { 'TxCreatedInFuture' : null } |
+  { 'InsufficientFunds' : { 'balance' : Tokens } };
+export interface TransferFee { 'transfer_fee' : Tokens }
+export type TransferFeeArg = {};
 export interface TransferProposal {
   'id' : string,
   'votes' : Array<Vote>,
   'destinationAddress' : string,
+  'description' : string,
   'rejected' : boolean,
   'proposer' : Principal,
   'amount' : bigint,
   'adopted' : boolean,
 }
+export type TransferResult = { 'Ok' : bigint } |
+  { 'Err' : TransferError };
 export interface Vote { 'adopt' : boolean, 'voter' : Principal }
 export type VoteOnProposalAction = { 'voted' : null } |
   { 'rejected' : null } |
@@ -66,7 +86,9 @@ export interface _SERVICE {
   'getVaultBalance' : () => Promise<bigint>,
   'proposeSigner' : (arg_0: string, arg_1: Principal) => Promise<DefaultResult>,
   'proposeThreshold' : (arg_0: string, arg_1: number) => Promise<DefaultResult>,
-  'proposeTransfer' : (arg_0: string, arg_1: bigint) => Promise<DefaultResult>,
+  'proposeTransfer' : (arg_0: string, arg_1: string, arg_2: bigint) => Promise<
+      DefaultResult
+    >,
   'voteOnSignerProposal' : (arg_0: string, arg_1: boolean) => Promise<
       VoteOnProposalResult
     >,

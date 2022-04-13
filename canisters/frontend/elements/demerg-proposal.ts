@@ -20,6 +20,7 @@ type State = {
     proposalValueInputId: string,
     proposalValueInputTemplate: TemplateResult,
     proposalValueTemplate: TemplateResult,
+    proposalValueInputRetriever: (element: DemergProposal) => any;
     canisterMethodCreate: (description: string, proposalValue: any) => any;
     canisterMethodAdopt: (proposalId: string) => any;
     canisterMethodReject: (proposalId: string) => any;
@@ -37,12 +38,13 @@ const InitialState: State = {
     proposalValueInputId: '',
     proposalValueInputTemplate: html``,
     proposalValueTemplate: html``,
+    proposalValueInputRetriever: () => {},
     canisterMethodCreate: () => {},
     canisterMethodAdopt: () => {},
     canisterMethodReject: () => {}
 };
 
-class DemergProposal extends HTMLElement {
+export class DemergProposal extends HTMLElement {
     shadow = this.attachShadow({
         mode: 'closed'
     });
@@ -117,7 +119,7 @@ class DemergProposal extends HTMLElement {
                 <div>
                     <button @click=${() => {
                         const descriptionInputvalue = (this.shadow.getElementById('description-input') as HTMLInputElement | null)?.value;
-                        const proposalValueInputValue = (this.shadow.getElementById(state.proposalValueInputId) as HTMLInputElement | null)?.value
+                        const proposalValueInputValue = this.store.proposalValueInputRetriever(this);
 
                         if (
                             descriptionInputvalue === undefined ||

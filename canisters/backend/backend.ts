@@ -15,7 +15,7 @@ import {
     ICP,
     Tokens
 } from './icp';
-import { addressFromPrincipalBinary } from './address';
+import { binaryAddressFromPrincipal } from './address';
 
 // TODO add a get controllers method and a get cycles method
 // TODO it would be cool if the cycles usage could be calculated somehow
@@ -47,7 +47,7 @@ export function init(
 
 export function* getVaultBalance(): UpdateAsync<nat64> {
     const result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
-        account: addressFromPrincipalBinary(ic.id())
+        account: binaryAddressFromPrincipal(ic.id())
     });
 
     // TODO we should probably return a result here

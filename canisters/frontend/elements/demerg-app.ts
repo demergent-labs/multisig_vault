@@ -10,12 +10,14 @@ import {
 import { createActor } from '../canisters/backend';
 import {
     ThresholdProposal,
-    SignerProposal
+    SignerProposal,
+    TransferProposal
 } from '../canisters/backend/backend.did';
 import { Principal } from '@dfinity/principal';
 import { AuthClient } from '@dfinity/auth-client';
 import { Identity } from '@dfinity/agent';
 import './demerg-proposal';
+import { DemergProposal } from './demerg-proposal';
 
 type State = {
     identity: Identity | null;
@@ -34,9 +36,12 @@ type State = {
         value: Principal[];
     };
     signerProposals: SignerProposal[];
+    transferProposals: TransferProposal[];
     hideCreateSignerProposal: boolean;
+    hideCreateTransferProposal: boolean;
     hideOpenSignerProposals: boolean;
     hideOpenThresholdProposals: boolean;
+    hideOpenTransferProposals: boolean;
 };
 
 const InitialState: State = {
@@ -56,9 +61,12 @@ const InitialState: State = {
         value: []
     },
     signerProposals: [],
+    transferProposals: [],
+    hideCreateTransferProposal: true,
     hideCreateSignerProposal: true,
     hideOpenSignerProposals: false,
-    hideOpenThresholdProposals: false
+    hideOpenThresholdProposals: false,
+    hideOpenTransferProposals: false
 };
 
 class DemergApp extends HTMLElement {
@@ -129,6 +137,10 @@ class DemergApp extends HTMLElement {
         backend.getSignerProposals().then((signerProposals) => {
             this.store.signerProposals = signerProposals;
         });
+
+        backend.getTransferProposals().then((transferProposals) => {
+            this.store.transferProposals = transferProposals;
+        });
     }
 
     render(state: State) {
@@ -143,7 +155,7 @@ class DemergApp extends HTMLElement {
             
             <br>
 
-            <div>Canister balance: ${state.balance.loading === true ? 'Loading...' : state.balance.value}</div>
+            <div>Canister balance: ${state.balance.loading === true ? 'Loading...' : `${Number(state.balance.value * 10000n / BigInt(10**8)) / 10000} ICP`}</div>
             
             <br>
             
@@ -177,6 +189,11 @@ class DemergApp extends HTMLElement {
                     .proposalType=${'Threshold'}
                     .proposalValueInputId=${'threshold-input'}
                     .proposalValueInputTemplate=${html`Threshold: <input id="threshold-input" type="number">`}
+                    .proposalValueInputRetriever=${(element: DemergProposal) => {
+                        const threshold = (element.shadow.getElementById('threshold-input') as HTMLInputElement | null)?.value;
+
+                        return threshold;
+                    }}
                     .canisterMethodCreate=${async (description: string, threshold: string) => {
                         const backend = createActor(
                             window.process.env.BACKEND_CANISTER_ID as any,
@@ -317,6 +334,11 @@ class DemergApp extends HTMLElement {
                     .proposalType=${'Signer'}
                     .proposalValueInputId=${'signer-input'}
                     .proposalValueInputTemplate=${html`Signer: <input id="signer-input" type="text">`}
+                    .proposalValueInputRetriever=${(element: DemergProposal) => {
+                        const signer = (element.shadow.getElementById('signer-input') as HTMLInputElement | null)?.value;
+
+                        return signer;
+                    }}
                     .canisterMethodCreate=${async (description: string, signer: string) => {
                         const backend = createActor(
                             window.process.env.BACKEND_CANISTER_ID as any,
@@ -395,6 +417,161 @@ class DemergApp extends HTMLElement {
                                     );
 
                                     const result = await backend.voteOnSignerProposal(signerProposal.id, false);
+
+                                    console.log('canisterMethodReject result', result);
+
+                                    if (result.hasOwnProperty('ok')) {
+                                        this.loadData();
+                                    }
+                                    else {
+                                        alert((result as any).err);
+                                    }
+                                }}
+                            ></demerg-proposal>
+                        </div>
+
+                        <br>
+                    `;
+                })}
+            </div>
+
+            <br>
+
+            <div>Transfer Proposals</div>
+
+            <br>
+
+            <div>
+                <button @click=${() => this.store.hideOpenTransferProposals = false}>
+                    Open Proposals
+                </button>
+                <button @click=${() => this.store.hideOpenTransferProposals = true}>
+                    Closed Proposals
+                </button>
+            </div>
+
+            <br>
+
+            <div>
+                <button @click=${() => this.store.hideCreateTransferProposal = !this.store.hideCreateTransferProposal}>
+                    Create Transfer Proposal
+                </button>
+            </div>
+
+            <br>
+
+            <div>
+                <demerg-proposal
+                    ?hidden=${state.hideCreateTransferProposal}
+                    .mode=${'CREATE'}
+                    .proposalType=${'Transfer'}
+                    .proposalValueInputId=${'transfer-input'}
+                    .proposalValueInputTemplate=${html`
+                        <div>
+                            <div>
+                                Address: <input id="transfer-address-input" type="text">
+                            </div>
+
+                            <div>
+                                Amount: <input id="transfer-amount-input" type="number">
+                            </div>
+                        </div>
+                    `}
+                    .proposalValueInputRetriever=${(element: DemergProposal) => {
+                        const transferAddressInputValue = (element.shadow.getElementById('transfer-address-input') as HTMLInputElement | null)?.value;
+                        const transferAmountInputValue = (element.shadow.getElementById('transfer-amount-input') as HTMLInputElement | null)?.value;
+
+                        const decimals = transferAmountInputValue?.split('.')[1]?.length ?? 0;
+
+                        // TODO test this conversion big time...maybe we just send the string over and do the conversion on the backend?
+                        return {
+                            address: transferAddressInputValue,
+                            amount: BigInt(Number(transferAmountInputValue ?? 0) * 10**decimals) * BigInt(10**(8 - decimals))
+                        };
+                    }}
+                    .canisterMethodCreate=${async (description: string, value: { address: string; amount: nat64 }) => {
+                        const backend = createActor(
+                            window.process.env.BACKEND_CANISTER_ID as any,
+                            {
+                                agentOptions: {
+                                    identity: this.store.identity as any
+                                }
+                            }
+                        );
+    
+                        // TODO we might need a way to allow the developer to pass in a function that extracts the value from the input
+                        const result = await backend.proposeTransfer(description, value.address, value.amount);
+    
+                        if (result.hasOwnProperty('ok')) {
+                            this.store.hideCreateTransferProposal = true;
+                            this.loadData();
+                        }
+                        else {
+                            alert((result as any).err);
+                        }
+                    }}
+                ></demerg-proposal>
+            </div>
+
+            <br>
+
+            <div>
+                ${state.transferProposals.map((transferProposal) => {
+                    const open = transferProposal.adopted === false && transferProposal.rejected === false;
+                    const hidden = (open && state.hideOpenTransferProposals === true) || (!open && state.hideOpenTransferProposals === false);
+                    
+                    return html`
+                        <div
+                            ?hidden=${hidden}
+                            class="proposal-container"
+                        >
+                            <demerg-proposal
+                                .mode=${'READ'}
+                                .proposalType=${'Transfer'}
+                                .proposer=${transferProposal.proposer}
+                                .description=${transferProposal.description}
+                                .votes=${transferProposal.votes}
+                                .adopted=${transferProposal.adopted}
+                                .rejected=${transferProposal.rejected}
+                                .proposalId=${transferProposal.id}
+                                .proposalValueTemplate=${html`
+                                    <div>
+                                        <div>Destination Address: ${transferProposal.destinationAddress}</div>
+                                        <div>Amount: ${Number(transferProposal.amount * 10000n / BigInt(10**8)) / 10000} ICP</div>
+                                    </div>
+                                `}
+                                .canisterMethodAdopt=${async () => {
+                                    const backend = createActor(
+                                        window.process.env.BACKEND_CANISTER_ID as any,
+                                        {
+                                            agentOptions: {
+                                                identity: this.store.identity as any
+                                            }
+                                        }
+                                    );
+
+                                    const result = await backend.voteOnTransferProposal(transferProposal.id, true);
+
+                                    console.log('canisterMethodAdopt result', result);
+
+                                    if (result.hasOwnProperty('ok')) {
+                                        this.loadData();
+                                    }
+                                    else {
+                                        alert((result as any).err);
+                                    }
+                                }}
+                                .canisterMethodReject=${async () => {
+                                    const backend = createActor(
+                                        window.process.env.BACKEND_CANISTER_ID as any,
+                                        {
+                                            agentOptions: {
+                                                identity: this.store.identity as any
+                                            }
+                                        }
+                                    );
+
+                                    const result = await backend.voteOnTransferProposal(transferProposal.id, false);
 
                                     console.log('canisterMethodReject result', result);
 

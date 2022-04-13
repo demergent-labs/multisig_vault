@@ -22,6 +22,7 @@ export const idlFactory = ({ IDL }) => {
     'id' : IDL.Text,
     'votes' : IDL.Vec(Vote),
     'destinationAddress' : IDL.Text,
+    'description' : IDL.Text,
     'rejected' : IDL.Bool,
     'proposer' : IDL.Principal,
     'amount' : IDL.Nat64,
@@ -60,7 +61,11 @@ export const idlFactory = ({ IDL }) => {
     'getVaultBalance' : IDL.Func([], [IDL.Nat64], []),
     'proposeSigner' : IDL.Func([IDL.Text, IDL.Principal], [DefaultResult], []),
     'proposeThreshold' : IDL.Func([IDL.Text, IDL.Nat8], [DefaultResult], []),
-    'proposeTransfer' : IDL.Func([IDL.Text, IDL.Nat64], [DefaultResult], []),
+    'proposeTransfer' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Nat64],
+        [DefaultResult],
+        [],
+      ),
     'voteOnSignerProposal' : IDL.Func(
         [IDL.Text, IDL.Bool],
         [VoteOnProposalResult],

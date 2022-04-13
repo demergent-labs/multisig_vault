@@ -27,6 +27,7 @@ type Transfer = record {
 type TransferProposal = record {
     "id": text;
     "proposer": principal;
+    "description": text;
     "destinationAddress": text;
     "amount": nat64;
     "votes": vec Vote;
@@ -35,7 +36,20 @@ type TransferProposal = record {
 };
 
 type AccountBalanceArgs = record {
-    "account": AccountIdentifier;
+    "account": vec nat8;
+};
+
+type TransferFeeArg = record {
+    
+};
+
+type TransferArgs = record {
+    "memo": nat64;
+    "amount": Tokens;
+    "fee": Tokens;
+    "from_subaccount": opt vec nat8;
+    "to": vec nat8;
+    "created_at_time": opt TimeStamp;
 };
 
 type NameResult = record {
@@ -44,6 +58,10 @@ type NameResult = record {
 
 type Tokens = record {
     "e8s": nat64;
+};
+
+type TransferFee = record {
+    "transfer_fee": Tokens;
 };
 
 type CanisterStatusArgs = record {
@@ -63,7 +81,9 @@ type Vote = record {
     "adopt": bool;
 };
 
-type AccountIdentifier = vec nat8;
+type TimeStamp = record {
+    "timestamp_nanos": nat64;
+};
 
 type DefiniteCanisterSettings = record {
     "controllers": vec principal;
@@ -76,7 +96,11 @@ type DefaultResult = variant { "ok": bool; "err": text };
 
 type VoteOnProposalResult = variant { "ok": VoteOnProposalAction; "err": text };
 
+type TransferResult = variant { "Ok": nat64; "Err": TransferError };
+
 type VoteOnProposalAction = variant { "voted": null; "adopted": null; "rejected": null };
+
+type TransferError = variant { "BadFee": record { "expected_fee": Tokens; }; "InsufficientFunds": record { "balance": Tokens; }; "TxTooOld": record { "allowed_window_nanos": nat64; }; "TxCreatedInFuture": null; "TxDuplicate": record { "duplicate_of": nat64; } };
 
 type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
 
@@ -91,7 +115,7 @@ service: (vec principal, nat8) -> {
     "voteOnSignerProposal": (text, bool) -> (VoteOnProposalResult);
     "proposeThreshold": (text, nat8) -> (DefaultResult);
     "voteOnThresholdProposal": (text, bool) -> (VoteOnProposalResult);
-    "proposeTransfer": (text, nat64) -> (DefaultResult);
+    "proposeTransfer": (text, text, nat64) -> (DefaultResult);
     "voteOnTransferProposal": (text, bool) -> (VoteOnProposalResult);
     "getVaultBalance": () -> (nat64);
 }

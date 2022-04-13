@@ -48,6 +48,7 @@ export type ThresholdProposal = {
 export type TransferProposal = {
     id: string;
     proposer: Principal;
+    description: string;
     destinationAddress: string; // TODO it would be nice to make this an Address type, just not sure I have that functionality
     amount: nat64;
     votes: Vote[];

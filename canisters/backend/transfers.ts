@@ -8,10 +8,16 @@ import {
     Principal
 } from 'azle';
 import {
-    ICPCanister,
-    NameResult
+    ICP,
+    NameResult,
+    TransferFee,
+    Tokens,
+    TransferResult
 } from './icp';
-import { state } from './backend';
+import {
+    state,
+    ICPCanister
+} from './backend';
 import { isSigner } from './signers';
 import {
     TransferProposal,
@@ -22,6 +28,10 @@ import {
 } from './types';
 import { Management } from 'azle/canisters/management';
 import { sha224 } from 'hash.js';
+import {
+    binaryAddressFromAddress,
+    binaryAddressFromPrincipal
+} from './address';
 
 export function getTransfers(): Query<Transfer[]> {
     return Object.values(state.transfers) as Transfer[];
@@ -31,8 +41,8 @@ export function getTransferProposals(): Query<TransferProposal[]> {
     return Object.values(state.transferProposals) as TransferProposal[];
 }
 
-// TODO should we check to make sure that we have a sufficient balance? That would be cool
 export function* proposeTransfer(
+    description: string,
     destinationAddress: string,
     amount: nat64
 ): UpdateAsync<DefaultResult> {
@@ -44,7 +54,32 @@ export function* proposeTransfer(
         };
     }
 
-    // TODO check that there is enough ICP in the vault to initiate this transfer
+    const account_balance_result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
+        account: binaryAddressFromPrincipal(ic.id())
+    });
+
+    if (account_balance_result.ok === undefined) {
+        return {
+            err: 'Could not retrieve the canister balance'
+        };
+    }
+    
+    const transfer_fee_result: CanisterResult<TransferFee> = yield ICPCanister.transfer_fee({});
+
+    if (transfer_fee_result.ok === undefined) {
+        return {
+            err: 'Could not retrieve the transfer fee'
+        };
+    }
+
+    const account_balance = account_balance_result.ok.e8s;
+    const transfer_fee = transfer_fee_result.ok.transfer_fee.e8s;
+
+    if (account_balance < (amount + transfer_fee)) {
+        return {
+            err: 'Insufficient funds'
+        };
+    }
 
     const id_result: CanisterResult<string> = yield ic.canisters.Management<Management>('aaaaa-aa').raw_rand();
 
@@ -59,6 +94,7 @@ export function* proposeTransfer(
     state.transferProposals[id] = {
         id,
         proposer: caller,
+        description,
         destinationAddress,
         amount,
         votes: [],
@@ -71,10 +107,10 @@ export function* proposeTransfer(
     };
 }
 
-export function voteOnTransferProposal(
+export function* voteOnTransferProposal(
     transferProposalId: string,
     adopt: boolean
-): Update<VoteOnProposalResult> {
+): UpdateAsync<VoteOnProposalResult> {
     const caller = ic.caller();
     
     if (isSigner(caller) === false) {
@@ -113,14 +149,36 @@ export function voteOnTransferProposal(
         }
     ];
 
-    transferProposal.votes = newVotes;
-
-    const adoptVotes = transferProposal.votes.filter((vote) => vote.adopt === true);
-    const rejectVotes = transferProposal.votes.filter((vote) => vote.adopt === false);
+    const adoptVotes = newVotes.filter((vote) => vote.adopt === true);
+    const rejectVotes = newVotes.filter((vote) => vote.adopt === false);
 
     if (adoptVotes.length >= state.threshold) {
-        // TODO execute the ICP transfer
+        const transfer_fee_result: CanisterResult<TransferFee> = yield ICPCanister.transfer_fee({});
 
+        if (transfer_fee_result.ok === undefined) {
+            return {
+                err: 'Could not retrieve the transfer fee'
+            };
+        }
+
+        const canister_result: CanisterResult<TransferResult> = yield ICPCanister.transfer({
+            memo: 0n,
+            amount: {
+                e8s: transferProposal.amount,
+            },
+            fee: transfer_fee_result.ok.transfer_fee,
+            from_subaccount: null,
+            to: binaryAddressFromAddress(transferProposal.destinationAddress),
+            created_at_time: null // TODO what happens if I don't put this?
+        });
+
+        if (canister_result.ok === undefined) {
+            return {
+                err: canister_result.err
+            };
+        }
+
+        transferProposal.votes = newVotes;
         transferProposal.adopted = true;
 
         return {
@@ -131,6 +189,7 @@ export function voteOnTransferProposal(
     }
 
     if (rejectVotes.length > Object.keys(state.signers).length - state.threshold) {
+        transferProposal.votes = newVotes;
         transferProposal.rejected = true;
 
         return {
@@ -139,6 +198,8 @@ export function voteOnTransferProposal(
             }
         };
     }
+
+    transferProposal.votes = newVotes;
 
     return {
         ok: {

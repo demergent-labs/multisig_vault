@@ -8,13 +8,17 @@ import { sha224 } from 'hash.js';
 import { crc32 } from './crc32';
 import { decode } from './decode';
 
-export function addressFromPrincipalHex(principal: Principal): Address {
+export function hexAddressFromPrincipal(principal: Principal): Address {
     return addressFromPrincipal(principal);
 }
 
-export function addressFromPrincipalBinary(principal: Principal): number[] {
+export function binaryAddressFromPrincipal(principal: Principal): number[] {
   const address = addressFromPrincipal(principal);;
-  return address.match(/.{1,2}/g)?.map((x) => parseInt(x, 16)) ?? []
+  return address.match(/.{1,2}/g)?.map((x) => parseInt(x, 16)) ?? [];
+}
+
+export function binaryAddressFromAddress(address: Address): number[] {
+    return address.match(/.{1,2}/g)?.map((x) => parseInt(x, 16)) ?? [];
 }
 
 // https://github.com/Toniq-Labs/extendable-token/blob/86eabb7336ea259876be9be830fb69b03046ea14/motoko/util/AccountIdentifier.mo

@@ -104,13 +104,13 @@ export function voteOnThresholdProposal(
         }
     ];
 
-    thresholdProposal.votes = newVotes;
-
     const adoptVotes = newVotes.filter((vote) => vote.adopt === true);
     const rejectVotes = newVotes.filter((vote) => vote.adopt === false);
 
     if (adoptVotes.length >= state.threshold) {
         state.threshold = thresholdProposal.threshold;
+
+        thresholdProposal.votes = newVotes;
         thresholdProposal.adopted = true;
 
         return {
@@ -121,6 +121,7 @@ export function voteOnThresholdProposal(
     }
 
     if (rejectVotes.length > Object.keys(state.signers).length - state.threshold) {
+        thresholdProposal.votes = newVotes;
         thresholdProposal.rejected = true;
 
         return {
@@ -129,6 +130,8 @@ export function voteOnThresholdProposal(
             }
         };
     }
+
+    thresholdProposal.votes = newVotes;
 
     return {
         ok: {

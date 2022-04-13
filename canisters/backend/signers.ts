@@ -103,13 +103,13 @@ export function voteOnSignerProposal(
         }
     ];
 
-    signerProposal.votes = newVotes;
-
     const adoptVotes = newVotes.filter((vote) => vote.adopt === true);
     const rejectVotes = newVotes.filter((vote) => vote.adopt === false);
 
     if (adoptVotes.length >= state.threshold) {
         state.signers[signerProposal.signer] = signerProposal.signer;
+
+        signerProposal.votes = newVotes;
         signerProposal.adopted = true;
 
         return {
@@ -120,6 +120,7 @@ export function voteOnSignerProposal(
     }
 
     if (rejectVotes.length > Object.keys(state.signers).length - state.threshold) {
+        signerProposal.votes = newVotes;
         signerProposal.rejected = true;
 
         return {
@@ -128,6 +129,8 @@ export function voteOnSignerProposal(
             }
         };
     }
+
+    signerProposal.votes = newVotes;
 
     return {
         ok: {
