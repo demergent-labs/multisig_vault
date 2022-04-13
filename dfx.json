@@ -17,6 +17,11 @@
             "build": "",
             "candid": "canisters/internet_identity/internet_identity.did",
             "wasm": "canisters/internet_identity/internet_identity_test.wasm"
+        },
+        "icp_ledger": {
+            "type": "custom",
+            "candid": "canisters/icp_ledger/ledger.private.did",
+            "wasm": "canisters/icp_ledger/ledger.wasm"
         }
     }
 }

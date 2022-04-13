@@ -3,11 +3,19 @@ import {
     nat8,
     Init,
     UpdateAsync,
-    nat64
+    nat64,
+    Query,
+    ic,
+    CanisterResult
 } from 'azle';
 import {
     State
 } from './types';
+import {
+    ICP,
+    Tokens
+} from './icp';
+import { addressFromPrincipalBinary } from './address';
 
 // TODO add a get controllers method and a get cycles method
 // TODO it would be cool if the cycles usage could be calculated somehow
@@ -20,6 +28,8 @@ export let state: State = {
     threshold: 0,
     thresholdProposals: {}
 };
+
+export const ICPCanister = ic.canisters.ICP<ICP>('rno2w-sqaaa-aaaaa-aaacq-cai');
 
 export function init(
     signers: Principal[],
@@ -36,9 +46,17 @@ export function init(
 }
 
 export function* getVaultBalance(): UpdateAsync<nat64> {
-    // TODO retrieve this canister's balance off of the ledger
+    const result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
+        account: addressFromPrincipalBinary(ic.id())
+    });
 
-    return 0n;
+    // TODO we should probably return a result here
+    if (result.ok !== undefined) {
+        return result.ok.e8s;
+    }
+    else {
+        return 0n;
+    }
 }
 
 export {

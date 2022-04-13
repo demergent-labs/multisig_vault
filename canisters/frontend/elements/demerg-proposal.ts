@@ -5,11 +5,13 @@ import {
 } from 'lit-html';
 import { createObjectStore } from 'reduxular';
 import { Vote } from '../../backend/types';
+import { Principal } from '@dfinity/principal';
 
 // TODO perhaps allow passing in fields that can be customized from above
 type State = {
     mode: 'CREATE' | 'READ' | 'UPDATE' | 'LOADING';
     proposalType: string;
+    proposer: Principal;
     description: string;
     votes: Vote[];
     adopted: boolean;
@@ -26,6 +28,7 @@ type State = {
 const InitialState: State = {
     mode: 'LOADING',
     proposalType: '',
+    proposer: Principal.fromText('aaaaa-aa'),
     proposalId: '',
     description: '',
     votes: [],
@@ -140,6 +143,10 @@ class DemergProposal extends HTMLElement {
                 <br>
 
                 <div>id: ${state.proposalId}</div>
+
+                <br>
+
+                <div>Proposer: ${state.proposer.toString()}</div>
 
                 <br>
 

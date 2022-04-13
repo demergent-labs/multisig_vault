@@ -55,7 +55,7 @@ export type TransferProposal = {
     rejected: boolean;
 };
 
-// type Address = string; // TODO would be nice to support this kind of type alias
+export type Address = string; // TODO would be nice to support this kind of type alias
 
 export type Vote = {
     voter: Principal;

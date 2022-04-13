@@ -7,11 +7,11 @@ import {
     nat64,
     nat8
 } from 'azle';
-import { createActor } from '../candid/canisters/backend';
+import { createActor } from '../canisters/backend';
 import {
     ThresholdProposal,
     SignerProposal
-} from '../candid/canisters/backend/backend.did';
+} from '../canisters/backend/backend.did';
 import { Principal } from '@dfinity/principal';
 import { AuthClient } from '@dfinity/auth-client';
 import { Identity } from '@dfinity/agent';
@@ -81,7 +81,7 @@ class DemergApp extends HTMLElement {
         else {
             await new Promise((resolve, reject) => {
                 authClient.login({
-                    identityProvider: `http://rkp4c-7iaaa-aaaaa-aaaca-cai.localhost:8000`,
+                    identityProvider: window.process.env.II_PROVIDER_URL as any,
                     onSuccess: resolve as any,
                     onError: reject
                 });
@@ -216,6 +216,7 @@ class DemergApp extends HTMLElement {
                             <demerg-proposal
                                 .mode=${'READ'}
                                 .proposalType=${'Threshold'}
+                                .proposer=${thresholdProposal.proposer}
                                 .description=${thresholdProposal.description}
                                 .votes=${thresholdProposal.votes}
                                 .adopted=${thresholdProposal.adopted}
@@ -231,8 +232,6 @@ class DemergApp extends HTMLElement {
                                             }
                                         }
                                     );
-
-                                    console.log('about to reject');
 
                                     const result = await backend.voteOnThresholdProposal(thresholdProposal.id, true);
 
@@ -357,6 +356,7 @@ class DemergApp extends HTMLElement {
                             <demerg-proposal
                                 .mode=${'READ'}
                                 .proposalType=${'Signer'}
+                                .proposer=${signerProposal.proposer}
                                 .description=${signerProposal.description}
                                 .votes=${signerProposal.votes}
                                 .adopted=${signerProposal.adopted}
@@ -372,8 +372,6 @@ class DemergApp extends HTMLElement {
                                             }
                                         }
                                     );
-
-                                    console.log('about to reject');
 
                                     const result = await backend.voteOnSignerProposal(signerProposal.id, true);
 

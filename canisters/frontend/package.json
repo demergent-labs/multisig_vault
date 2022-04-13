@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "build": "cp -r ../../.dfx/local/canisters candid && snowpack build --polyfill-node"
+        "build": "cp -r ../../.dfx/local/canisters ./ && cd canisters && rm **/*.wasm && cd .. && snowpack build --polyfill-node"
     },
     "dependencies": {
         "@dfinity/agent": "0.11.0",
