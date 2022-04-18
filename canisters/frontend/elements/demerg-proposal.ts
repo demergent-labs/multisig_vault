@@ -6,11 +6,19 @@ import {
 import { createObjectStore } from 'reduxular';
 import { Vote } from '../../backend/types';
 import { Principal } from '@dfinity/principal';
+import { nat64 } from 'azle';
 
+// TODO we should just create a Proposal type that has all of these fields
 // TODO perhaps allow passing in fields that can be customized from above
 type State = {
     mode: 'CREATE' | 'READ' | 'UPDATE' | 'LOADING';
+    loadingCreate: boolean;
+    loadingAdopt: boolean;
+    loadingReject: boolean;
     proposalType: string;
+    created_at: nat64;
+    adopted_at: nat64;
+    rejected_at: nat64;
     proposer: Principal;
     description: string;
     votes: Vote[];
@@ -28,6 +36,12 @@ type State = {
 
 const InitialState: State = {
     mode: 'LOADING',
+    loadingCreate: false,
+    loadingAdopt: false,
+    loadingReject: false,
+    created_at: 0n,
+    adopted_at: 0n,
+    rejected_at: 0n,
     proposalType: '',
     proposer: Principal.fromText('aaaaa-aa'),
     proposalId: '',
@@ -54,7 +68,10 @@ export class DemergProposal extends HTMLElement {
         description: string,
         proposalValue: any
     ) {
+        this.store.loadingCreate = true;
+
         try {
+
             await this.store.canisterMethodCreate(
                 description,
                 proposalValue
@@ -64,9 +81,13 @@ export class DemergProposal extends HTMLElement {
             console.log(error);
             alert('The proposal could not be created');
         }
+
+        this.store.loadingCreate = false;
     }
 
     async clickedAdopt() {
+        this.store.loadingAdopt = true;
+
         try {
             await this.store.canisterMethodAdopt(this.store.proposalId);
         }
@@ -74,9 +95,13 @@ export class DemergProposal extends HTMLElement {
             console.log(error);
             alert('The proposal could not be adopted');
         }
+
+        this.store.loadingAdopt = false;
     }
 
     async clickedReject() {
+        this.store.loadingReject = true;
+
         try {
             console.log('clickedReject');
             await this.store.canisterMethodReject(this.store.proposalId);
@@ -86,6 +111,8 @@ export class DemergProposal extends HTMLElement {
             console.log(error);
             alert('The proposal could not be rejected');
         }
+
+        this.store.loadingReject = false;
     }
 
     render(state: State) {
@@ -134,13 +161,17 @@ export class DemergProposal extends HTMLElement {
                             );
                         }
                     }}>
-                        Create
+                        ${state.loadingCreate === true ? 'Loading...' : 'Create'}
                     </button>
                 </div>
             ` : ''}
 
             ${state.mode === 'READ' ? html`
                 <div>Proposal Type: ${state.proposalType}</div>
+
+                <br>
+
+                <div>Created: ${new Date(Number(state.created_at / 1000000n)).toLocaleString()}</div>
 
                 <br>
 
@@ -162,8 +193,8 @@ export class DemergProposal extends HTMLElement {
 
                 <br>
 
-                <div>Adopted: ${state.adopted}</div>
-                <div>Rejected: ${state.rejected}</div>
+                <div>Adopted: ${state.adopted === true ? new Date(Number(state.adopted_at / 1000000n)).toLocaleString() : state.adopted}</div>
+                <div>Rejected: ${state.rejected === true ? new Date(Number(state.rejected_at / 1000000n)).toLocaleString() : state.rejected}</div>
 
                 <br>
 
@@ -177,13 +208,17 @@ export class DemergProposal extends HTMLElement {
                 <br>
 
                 <div>
-                    <button @click=${() => this.clickedAdopt()}>Adopt</button>
+                    <button @click=${() => this.clickedAdopt()}>
+                        ${state.loadingAdopt === true ? 'Loading...' : 'Adopt'}
+                    </button>
                 </div>
 
                 <br>
 
                 <div>
-                    <button @click=${() => this.clickedReject()}>Reject</button>
+                    <button @click=${() => this.clickedReject()}>
+                        ${state.loadingReject === true ? 'Loading...' : 'Reject'}
+                    </button>
                 </div>
             ` : ''}
 

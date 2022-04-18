@@ -5,15 +5,16 @@
 import { Principal } from 'azle';
 import { Address } from '../types';
 import { sha224 } from 'hash.js';
-import { crc32 } from './crc32';
+import { getCrc32 } from './crc32';
 import { decode } from './decode';
 
-export function hexAddressFromPrincipal(principal: Principal): Address {
-    return addressFromPrincipal(principal);
+// TODO we need to review these heavily
+export function hexAddressFromPrincipal(principal: Principal, subaccount: number): Address {
+    return addressFromPrincipal(principal, subaccount);
 }
 
-export function binaryAddressFromPrincipal(principal: Principal): number[] {
-  const address = addressFromPrincipal(principal);;
+export function binaryAddressFromPrincipal(principal: Principal, subaccount: number): number[] {
+  const address = addressFromPrincipal(principal, subaccount);
   return address.match(/.{1,2}/g)?.map((x) => parseInt(x, 16)) ?? [];
 }
 
@@ -22,7 +23,8 @@ export function binaryAddressFromAddress(address: Address): number[] {
 }
 
 // https://github.com/Toniq-Labs/extendable-token/blob/86eabb7336ea259876be9be830fb69b03046ea14/motoko/util/AccountIdentifier.mo
-// addressFromPrincipal probably licensed as a derivative work with the following license
+// https://github.com/Toniq-Labs/entrepot-app/blob/5004eb5cb3c98805b665d3fa24d95483ce2a8cda/src/ic/utils.js
+// Some functions below licensed as follows
 // MIT License
 
 // Copyright (c) 2022 Toniq Labs
@@ -32,20 +34,24 @@ export function binaryAddressFromAddress(address: Address): number[] {
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-function addressFromPrincipal(principal: Principal): Address {
-    const decodedPrincipalUint8Array = decodePrincipalFromText(principal);
-    const decodedPrincipalText = [...decodedPrincipalUint8Array].map(x => String.fromCharCode(x)).join('');
-    
-    const subaccountZero = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0].map(x => String.fromCharCode(x)).join('');
-    
-    const finalString = `\x0Aaccount-id${decodedPrincipalText}${subaccountZero}`;
-    
-    const hash: string = sha224().update(finalString).digest('hex');
-    const crc = crc32(new Uint8Array(hash.match(/.{1,2}/g)?.map(x => parseInt(x, 16)) ?? []));
-    
-    const address: Address = crc + hash;
+function addressFromPrincipal(principal: Principal, subaccount: number): Address {
+    const prefixBytes = new Uint8Array([10, 97, 99, 99, 111, 117, 110, 116, 45, 105, 100]); // \0xAaccount-id
+    const principalBytes = decodePrincipalFromText(principal);    
+    const subaccountBytes = getSubAccountArray(subaccount);
 
-    return address;
+    const hash = new Uint8Array(
+        sha224().update([
+            ...prefixBytes,
+            ...principalBytes,
+            ...subaccountBytes
+        ]).digest()
+    );
+    const checksum = to32Bits(getCrc32(hash));
+
+    return toHexString(new Uint8Array([
+        ...checksum,
+        ...hash
+    ]));
 }
 
 function decodePrincipalFromText(text: string): Uint8Array {
@@ -55,4 +61,20 @@ function decodePrincipalFromText(text: string): Uint8Array {
     arr = arr.slice(4, arr.length);
 
     return arr;
+}
+
+function getSubAccountArray(subaccount: number): number[] {
+    return Array(28).fill(0).concat(to32Bits(subaccount ? subaccount : 0));
+}
+
+function to32Bits(number: number) {
+    let b = new ArrayBuffer(4);
+    new DataView(b).setUint32(0, number);
+    return Array.from(new Uint8Array(b));
+}
+
+function toHexString(byteArray: Uint8Array) {
+    return Array.from(byteArray, (byte) => {
+        return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+    }).join('');
 }

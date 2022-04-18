@@ -93,13 +93,16 @@ export function* proposeTransfer(
 
     state.transferProposals[id] = {
         id,
+        created_at: ic.time(),
         proposer: caller,
         description,
         destinationAddress,
         amount,
         votes: [],
         adopted: false,
-        rejected: false
+        adopted_at: null,
+        rejected: false,
+        rejected_at: null
     };
 
     return {
@@ -133,6 +136,12 @@ export function* voteOnTransferProposal(
         };
     }
 
+    if (transferProposal.rejected === true) {
+        return {
+            err: `Transfer proposal ${transferProposalId} already rejected`
+        };
+    }
+
     const alreadyVoted = transferProposal.votes.find((vote) => vote.voter === caller) !== undefined;
 
     if (alreadyVoted === true) {
@@ -157,7 +166,7 @@ export function* voteOnTransferProposal(
 
         if (transfer_fee_result.ok === undefined) {
             return {
-                err: 'Could not retrieve the transfer fee'
+                err: transfer_fee_result.err
             };
         }
 
@@ -169,7 +178,7 @@ export function* voteOnTransferProposal(
             fee: transfer_fee_result.ok.transfer_fee,
             from_subaccount: null,
             to: binaryAddressFromAddress(transferProposal.destinationAddress),
-            created_at_time: null // TODO what happens if I don't put this?
+            created_at_time: null
         });
 
         if (canister_result.ok === undefined) {
@@ -178,8 +187,52 @@ export function* voteOnTransferProposal(
             };
         }
 
+        const transfer_result = canister_result.ok;
+
+        if (transfer_result.Ok === undefined) {
+            // TODO JSON.stringify would be nicer to return the error, but Boa I believe is panicing
+            // TODO I think it is because BigInt isn't being serialized easily, so if you can use that one neat trick toString
+            if (transfer_result.Err?.BadFee !== undefined) {
+                return {
+                    err: 'BadFee'
+                };
+            }
+
+            if (transfer_result.Err?.InsufficientFunds !== undefined) {
+                // TODO fix this one https://github.com/demergent-labs/azle/issues/225
+                const balance = (transfer_result.Err.InsufficientFunds as any).e8s;
+
+                return {
+                    err: `InsufficientFunds ${balance}`
+                };
+            }
+
+            if (transfer_result.Err?.TxCreatedInFuture !== undefined) {
+                return {
+                    err: 'TxCreatedInFuture'
+                };
+            }
+
+            if (transfer_result.Err?.TxDuplicate !== undefined) {
+                return {
+                    err: 'TxDuplicate'
+                };
+            }
+
+            if (transfer_result.Err?.TxTooOld !== undefined) {
+                return {
+                    err: 'TxTooOld'
+                };
+            }
+
+            return {
+                err: 'This should not happen'
+            };
+        }
+
         transferProposal.votes = newVotes;
         transferProposal.adopted = true;
+        transferProposal.adopted_at = ic.time();
 
         return {
             ok: {
@@ -191,6 +244,7 @@ export function* voteOnTransferProposal(
     if (rejectVotes.length > Object.keys(state.signers).length - state.threshold) {
         transferProposal.votes = newVotes;
         transferProposal.rejected = true;
+        transferProposal.rejected_at = ic.time();
 
         return {
             ok: {

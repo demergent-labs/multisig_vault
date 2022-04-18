@@ -49,12 +49,15 @@ export function* proposeThreshold(
 
     state.thresholdProposals[id] = {
         id,
+        created_at: ic.time(),
         proposer: caller,
         description,
         threshold,
         votes: [],
         adopted: false,
-        rejected: false
+        adopted_at: null,
+        rejected: false,
+        rejected_at: null
     };
 
     return {
@@ -88,6 +91,12 @@ export function voteOnThresholdProposal(
         };
     }
 
+    if (thresholdProposal.rejected === true) {
+        return {
+            err: `Threshold proposal ${thresholdProposalId} already rejected`
+        };
+    }
+
     const alreadyVoted = thresholdProposal.votes.find((vote) => vote.voter === caller) !== undefined;
 
     if (alreadyVoted === true) {
@@ -112,6 +121,7 @@ export function voteOnThresholdProposal(
 
         thresholdProposal.votes = newVotes;
         thresholdProposal.adopted = true;
+        thresholdProposal.adopted_at = ic.time();
 
         return {
             ok: {
@@ -123,6 +133,7 @@ export function voteOnThresholdProposal(
     if (rejectVotes.length > Object.keys(state.signers).length - state.threshold) {
         thresholdProposal.votes = newVotes;
         thresholdProposal.rejected = true;
+        thresholdProposal.rejected_at = ic.time();
 
         return {
             ok: {

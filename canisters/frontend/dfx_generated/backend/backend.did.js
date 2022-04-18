@@ -2,8 +2,11 @@ export const idlFactory = ({ IDL }) => {
   const Vote = IDL.Record({ 'adopt' : IDL.Bool, 'voter' : IDL.Principal });
   const SignerProposal = IDL.Record({
     'id' : IDL.Text,
+    'rejected_at' : IDL.Opt(IDL.Nat64),
+    'adopted_at' : IDL.Opt(IDL.Nat64),
     'votes' : IDL.Vec(Vote),
     'description' : IDL.Text,
+    'created_at' : IDL.Nat64,
     'rejected' : IDL.Bool,
     'proposer' : IDL.Principal,
     'signer' : IDL.Principal,
@@ -11,18 +14,24 @@ export const idlFactory = ({ IDL }) => {
   });
   const ThresholdProposal = IDL.Record({
     'id' : IDL.Text,
+    'rejected_at' : IDL.Opt(IDL.Nat64),
+    'adopted_at' : IDL.Opt(IDL.Nat64),
     'threshold' : IDL.Nat8,
     'votes' : IDL.Vec(Vote),
     'description' : IDL.Text,
+    'created_at' : IDL.Nat64,
     'rejected' : IDL.Bool,
     'proposer' : IDL.Principal,
     'adopted' : IDL.Bool,
   });
   const TransferProposal = IDL.Record({
     'id' : IDL.Text,
+    'rejected_at' : IDL.Opt(IDL.Nat64),
+    'adopted_at' : IDL.Opt(IDL.Nat64),
     'votes' : IDL.Vec(Vote),
     'destinationAddress' : IDL.Text,
     'description' : IDL.Text,
+    'created_at' : IDL.Nat64,
     'rejected' : IDL.Bool,
     'proposer' : IDL.Principal,
     'amount' : IDL.Nat64,
@@ -44,6 +53,10 @@ export const idlFactory = ({ IDL }) => {
     'err' : IDL.Text,
   });
   return IDL.Service({
+    'getAddress' : IDL.Func([IDL.Principal], [IDL.Text], ['query']),
+    'getCanisterAddress' : IDL.Func([], [IDL.Text], ['query']),
+    'getCanisterPrincipal' : IDL.Func([], [IDL.Text], ['query']),
+    'getProcess' : IDL.Func([], [IDL.Text], ['query']),
     'getSignerProposals' : IDL.Func([], [IDL.Vec(SignerProposal)], ['query']),
     'getSigners' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
     'getThreshold' : IDL.Func([], [IDL.Nat8], ['query']),

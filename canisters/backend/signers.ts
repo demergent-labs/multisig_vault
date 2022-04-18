@@ -48,12 +48,15 @@ export function* proposeSigner(
 
     state.signerProposals[id] = {
         id,
+        created_at: ic.time(),
         proposer: caller,
         description,
         signer,
         votes: [],
         adopted: false,
-        rejected: false
+        adopted_at: null,
+        rejected: false,
+        rejected_at: null
     };
 
     return {
@@ -87,6 +90,12 @@ export function voteOnSignerProposal(
         };
     }
 
+    if (signerProposal.rejected === true) {
+        return {
+            err: `Signer proposal ${signerProposalId} already rejected`
+        };
+    }
+
     const alreadyVoted = signerProposal.votes.find((vote) => vote.voter === caller) !== undefined;
 
     if (alreadyVoted === true) {
@@ -111,6 +120,7 @@ export function voteOnSignerProposal(
 
         signerProposal.votes = newVotes;
         signerProposal.adopted = true;
+        signerProposal.adopted_at = ic.time();
 
         return {
             ok: {
@@ -122,6 +132,7 @@ export function voteOnSignerProposal(
     if (rejectVotes.length > Object.keys(state.signers).length - state.threshold) {
         signerProposal.votes = newVotes;
         signerProposal.rejected = true;
+        signerProposal.rejected_at = ic.time();
 
         return {
             ok: {

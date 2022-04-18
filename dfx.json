@@ -6,7 +6,10 @@
             "root": "canisters/backend",
             "ts": "canisters/backend/backend.ts",
             "candid": "canisters/backend/backend.did",
-            "wasm": "target/wasm32-unknown-unknown/release/backend.wasm"
+            "wasm": "target/wasm32-unknown-unknown/release/backend.wasm",
+            "declarations": {
+                "output": "canisters/frontend/dfx_generated/backend"
+            }
         },
         "frontend": {
             "type": "assets",

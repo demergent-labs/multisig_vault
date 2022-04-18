@@ -7,12 +7,12 @@ import {
     nat64,
     nat8
 } from 'azle';
-import { createActor } from '../canisters/backend';
+import { createActor } from '../dfx_generated/backend';
 import {
     ThresholdProposal,
     SignerProposal,
     TransferProposal
-} from '../canisters/backend/backend.did';
+} from '../dfx_generated/backend/backend.did';
 import { Principal } from '@dfinity/principal';
 import { AuthClient } from '@dfinity/auth-client';
 import { Identity } from '@dfinity/agent';
@@ -20,6 +20,14 @@ import './demerg-proposal';
 import { DemergProposal } from './demerg-proposal';
 
 type State = {
+    canister_principal: {
+        loading: boolean;
+        value: string;
+    };
+    canister_address: {
+        loading: boolean;
+        value: string;
+    };
     identity: Identity | null;
     balance: {
         loading: boolean;
@@ -45,6 +53,14 @@ type State = {
 };
 
 const InitialState: State = {
+    canister_principal: {
+        loading: true,
+        value: ''
+    },
+    canister_address: {
+        loading: true,
+        value: ''
+    },
     identity: null,
     balance: {
         loading: true,
@@ -116,6 +132,20 @@ class DemergApp extends HTMLElement {
             };
         });
 
+        backend.getCanisterAddress().then((address) => {
+            this.store.canister_address = {
+                loading: false,
+                value: address
+            };
+        });
+
+        backend.getCanisterPrincipal().then((principal) => {
+            this.store.canister_principal = {
+                loading: false,
+                value: principal
+            };
+        });
+
         backend.getThreshold().then((threshold) => {
             this.store.threshold = {
                 loading: false,
@@ -158,7 +188,15 @@ class DemergApp extends HTMLElement {
             <div>Canister balance: ${state.balance.loading === true ? 'Loading...' : `${Number(state.balance.value * 10000n / BigInt(10**8)) / 10000} ICP`}</div>
             
             <br>
+
+            <div>Canister principal: ${state.canister_principal.loading === true ? 'Loading...' : state.canister_principal.value}</div>
             
+            <br>
+
+            <div>Canister address: ${state.canister_address.loading === true ? 'Loading...' : state.canister_address.value}</div>
+
+            <br>
+
             <div>Threshold: ${state.threshold.loading === true ? 'Loading...' : state.threshold.value}</div>
             
             <br>
@@ -233,6 +271,9 @@ class DemergApp extends HTMLElement {
                             <demerg-proposal
                                 .mode=${'READ'}
                                 .proposalType=${'Threshold'}
+                                .created_at=${thresholdProposal.created_at}
+                                .adopted_at=${thresholdProposal.adopted_at.length === 0 ? 0n : thresholdProposal.adopted_at[0]}
+                                .rejected_at=${thresholdProposal.rejected_at.length === 0 ? 0n : thresholdProposal.rejected_at[0]}
                                 .proposer=${thresholdProposal.proposer}
                                 .description=${thresholdProposal.description}
                                 .votes=${thresholdProposal.votes}
@@ -378,6 +419,9 @@ class DemergApp extends HTMLElement {
                             <demerg-proposal
                                 .mode=${'READ'}
                                 .proposalType=${'Signer'}
+                                .created_at=${signerProposal.created_at}
+                                .adopted_at=${signerProposal.adopted_at.length === 0 ? 0n : signerProposal.adopted_at[0]}
+                                .rejected_at=${signerProposal.rejected_at.length === 0 ? 0n : signerProposal.rejected_at[0]}
                                 .proposer=${signerProposal.proposer}
                                 .description=${signerProposal.description}
                                 .votes=${signerProposal.votes}
@@ -528,6 +572,9 @@ class DemergApp extends HTMLElement {
                             <demerg-proposal
                                 .mode=${'READ'}
                                 .proposalType=${'Transfer'}
+                                .created_at=${transferProposal.created_at}
+                                .adopted_at=${transferProposal.adopted_at.length === 0 ? 0n : transferProposal.adopted_at[0]}
+                                .rejected_at=${transferProposal.rejected_at.length === 0 ? 0n : transferProposal.rejected_at[0]}
                                 .proposer=${transferProposal.proposer}
                                 .description=${transferProposal.description}
                                 .votes=${transferProposal.votes}

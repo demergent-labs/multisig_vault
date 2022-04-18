@@ -1,21 +1,27 @@
 type SignerProposal = record {
     "id": text;
+    "created_at": nat64;
     "proposer": principal;
     "description": text;
     "signer": principal;
     "votes": vec Vote;
     "adopted": bool;
+    "adopted_at": opt nat64;
     "rejected": bool;
+    "rejected_at": opt nat64;
 };
 
 type ThresholdProposal = record {
     "id": text;
+    "created_at": nat64;
     "proposer": principal;
     "description": text;
     "threshold": nat8;
     "votes": vec Vote;
     "adopted": bool;
+    "adopted_at": opt nat64;
     "rejected": bool;
+    "rejected_at": opt nat64;
 };
 
 type Transfer = record {
@@ -26,13 +32,16 @@ type Transfer = record {
 
 type TransferProposal = record {
     "id": text;
+    "created_at": nat64;
     "proposer": principal;
     "description": text;
     "destinationAddress": text;
     "amount": nat64;
     "votes": vec Vote;
     "adopted": bool;
+    "adopted_at": opt nat64;
     "rejected": bool;
+    "rejected_at": opt nat64;
 };
 
 type AccountBalanceArgs = record {
@@ -111,6 +120,10 @@ service: (vec principal, nat8) -> {
     "getThresholdProposals": () -> (vec ThresholdProposal) query;
     "getTransfers": () -> (vec Transfer) query;
     "getTransferProposals": () -> (vec TransferProposal) query;
+    "getProcess": () -> (text) query;
+    "getCanisterPrincipal": () -> (text) query;
+    "getCanisterAddress": () -> (text) query;
+    "getAddress": (principal) -> (text) query;
     "proposeSigner": (text, principal) -> (DefaultResult);
     "voteOnSignerProposal": (text, bool) -> (VoteOnProposalResult);
     "proposeThreshold": (text, nat8) -> (DefaultResult);

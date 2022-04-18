@@ -15,7 +15,11 @@ import {
     ICP,
     Tokens
 } from './icp';
-import { binaryAddressFromPrincipal } from './address';
+import {
+    binaryAddressFromPrincipal,
+    hexAddressFromPrincipal
+} from './address';
+import { process } from './process_polyfill';
 
 // TODO add a get controllers method and a get cycles method
 // TODO it would be cool if the cycles usage could be calculated somehow
@@ -29,7 +33,7 @@ export let state: State = {
     thresholdProposals: {}
 };
 
-export const ICPCanister = ic.canisters.ICP<ICP>('rno2w-sqaaa-aaaaa-aaacq-cai');
+export const ICPCanister = ic.canisters.ICP<ICP>(process.env.ICP_LEDGER_CANISTER_ID);
 
 export function init(
     signers: Principal[],
@@ -45,9 +49,13 @@ export function init(
     state.threshold = threshold;
 }
 
+export function getProcess(): Query<string> {
+    return JSON.stringify(process);
+}
+
 export function* getVaultBalance(): UpdateAsync<nat64> {
     const result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
-        account: binaryAddressFromPrincipal(ic.id())
+        account: binaryAddressFromPrincipal(ic.id(), 0)
     });
 
     // TODO we should probably return a result here
@@ -57,6 +65,18 @@ export function* getVaultBalance(): UpdateAsync<nat64> {
     else {
         return 0n;
     }
+}
+
+export function getCanisterPrincipal(): Query<string> {
+    return ic.id();
+}
+
+export function getCanisterAddress(): Query<string> {
+    return hexAddressFromPrincipal(ic.id(), 0);
+}
+
+export function getAddress(principal: Principal): Query<string> {
+    return hexAddressFromPrincipal(principal, 0);
 }
 
 export {

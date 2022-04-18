@@ -22,8 +22,11 @@ export interface DefiniteCanisterSettings {
 export interface NameResult { 'name' : string }
 export interface SignerProposal {
   'id' : string,
+  'rejected_at' : [] | [bigint],
+  'adopted_at' : [] | [bigint],
   'votes' : Array<Vote>,
   'description' : string,
+  'created_at' : bigint,
   'rejected' : boolean,
   'proposer' : Principal,
   'signer' : Principal,
@@ -31,9 +34,12 @@ export interface SignerProposal {
 }
 export interface ThresholdProposal {
   'id' : string,
+  'rejected_at' : [] | [bigint],
+  'adopted_at' : [] | [bigint],
   'threshold' : number,
   'votes' : Array<Vote>,
   'description' : string,
+  'created_at' : bigint,
   'rejected' : boolean,
   'proposer' : Principal,
   'adopted' : boolean,
@@ -60,9 +66,12 @@ export interface TransferFee { 'transfer_fee' : Tokens }
 export type TransferFeeArg = {};
 export interface TransferProposal {
   'id' : string,
+  'rejected_at' : [] | [bigint],
+  'adopted_at' : [] | [bigint],
   'votes' : Array<Vote>,
   'destinationAddress' : string,
   'description' : string,
+  'created_at' : bigint,
   'rejected' : boolean,
   'proposer' : Principal,
   'amount' : bigint,
@@ -77,6 +86,10 @@ export type VoteOnProposalAction = { 'voted' : null } |
 export type VoteOnProposalResult = { 'ok' : VoteOnProposalAction } |
   { 'err' : string };
 export interface _SERVICE {
+  'getAddress' : (arg_0: Principal) => Promise<string>,
+  'getCanisterAddress' : () => Promise<string>,
+  'getCanisterPrincipal' : () => Promise<string>,
+  'getProcess' : () => Promise<string>,
   'getSignerProposals' : () => Promise<Array<SignerProposal>>,
   'getSigners' : () => Promise<Array<Principal>>,
   'getThreshold' : () => Promise<number>,
