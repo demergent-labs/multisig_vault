@@ -1,6 +1,4 @@
-import {
-    ic
-} from 'azle';
+import { ic } from 'azle';
 
 const production = ic.id() === 'jiyou-fiaaa-aaaam-aad6q-cai' ? true : false;
 

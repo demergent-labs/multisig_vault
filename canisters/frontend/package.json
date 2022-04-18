@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "build": "dfx generate backend && snowpack build --polyfill-node"
+        "build": "snowpack build --polyfill-node"
     },
     "dependencies": {
         "@dfinity/agent": "0.11.0",

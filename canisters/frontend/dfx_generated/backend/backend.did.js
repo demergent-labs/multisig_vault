@@ -42,6 +42,10 @@ export const idlFactory = ({ IDL }) => {
     'to' : IDL.Principal,
     'amount' : IDL.Nat64,
   });
+  const VaultBalanceResult = IDL.Variant({
+    'ok' : IDL.Nat64,
+    'err' : IDL.Text,
+  });
   const DefaultResult = IDL.Variant({ 'ok' : IDL.Bool, 'err' : IDL.Text });
   const VoteOnProposalAction = IDL.Variant({
     'voted' : IDL.Null,
@@ -53,10 +57,9 @@ export const idlFactory = ({ IDL }) => {
     'err' : IDL.Text,
   });
   return IDL.Service({
-    'getAddress' : IDL.Func([IDL.Principal], [IDL.Text], ['query']),
     'getCanisterAddress' : IDL.Func([], [IDL.Text], ['query']),
+    'getCanisterCycles' : IDL.Func([], [IDL.Nat64], ['query']),
     'getCanisterPrincipal' : IDL.Func([], [IDL.Text], ['query']),
-    'getProcess' : IDL.Func([], [IDL.Text], ['query']),
     'getSignerProposals' : IDL.Func([], [IDL.Vec(SignerProposal)], ['query']),
     'getSigners' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
     'getThreshold' : IDL.Func([], [IDL.Nat8], ['query']),
@@ -71,7 +74,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getTransfers' : IDL.Func([], [IDL.Vec(Transfer)], ['query']),
-    'getVaultBalance' : IDL.Func([], [IDL.Nat64], []),
+    'getVaultBalance' : IDL.Func([], [VaultBalanceResult], []),
     'proposeSigner' : IDL.Func([IDL.Text, IDL.Principal], [DefaultResult], []),
     'proposeThreshold' : IDL.Func([IDL.Text, IDL.Nat8], [DefaultResult], []),
     'proposeTransfer' : IDL.Func(

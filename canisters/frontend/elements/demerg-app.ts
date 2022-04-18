@@ -126,10 +126,12 @@ class DemergApp extends HTMLElement {
         );
 
         backend.getVaultBalance().then((balance) => {
-            this.store.balance = {
-                loading: false,
-                value: balance
-            };
+            if ('ok' in balance) {
+                this.store.balance = {
+                    loading: false,
+                    value: balance.ok
+                };
+            }
         });
 
         backend.getCanisterAddress().then((address) => {

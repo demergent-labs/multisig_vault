@@ -1,114 +1,25 @@
 import {
-    Query,
     CanisterResult,
-    UpdateAsync,
     ic,
-    nat64,
-    Update,
-    Principal
+    Principal,
+    UpdateAsync
 } from 'azle';
 import {
-    ICP,
-    NameResult,
-    TransferFee,
-    Tokens,
-    TransferResult
-} from './icp';
-import {
-    state,
-    ICPCanister
-} from './backend';
-import { isSigner } from './signers';
-import {
-    TransferProposal,
-    DefaultResult,
-    VoteOnProposalResult,
-    Transfer,
-    Vote
-} from './types';
-import { Management } from 'azle/canisters/management';
-import { sha224 } from 'hash.js';
-import {
     binaryAddressFromAddress,
-    binaryAddressFromPrincipal
-} from './address';
-
-export function getTransfers(): Query<Transfer[]> {
-    return Object.values(state.transfers) as Transfer[];
-}
-
-export function getTransferProposals(): Query<TransferProposal[]> {
-    return Object.values(state.transferProposals) as TransferProposal[];
-}
-
-export function* proposeTransfer(
-    description: string,
-    destinationAddress: string,
-    amount: nat64
-): UpdateAsync<DefaultResult> {
-    const caller = ic.caller();
-
-    if (isSigner(caller) === false) {
-        return {
-            err: 'Only signers can propose a transfer'
-        };
-    }
-
-    const account_balance_result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
-        account: binaryAddressFromPrincipal(ic.id())
-    });
-
-    if (account_balance_result.ok === undefined) {
-        return {
-            err: 'Could not retrieve the canister balance'
-        };
-    }
-    
-    const transfer_fee_result: CanisterResult<TransferFee> = yield ICPCanister.transfer_fee({});
-
-    if (transfer_fee_result.ok === undefined) {
-        return {
-            err: 'Could not retrieve the transfer fee'
-        };
-    }
-
-    const account_balance = account_balance_result.ok.e8s;
-    const transfer_fee = transfer_fee_result.ok.transfer_fee.e8s;
-
-    if (account_balance < (amount + transfer_fee)) {
-        return {
-            err: 'Insufficient funds'
-        };
-    }
-
-    const id_result: CanisterResult<string> = yield ic.canisters.Management<Management>('aaaaa-aa').raw_rand();
-
-    if (id_result.ok === undefined) {
-        return {
-            err: id_result.err
-        };
-    }
-
-    const id = sha224().update(id_result.ok).digest('hex');
-
-    state.transferProposals[id] = {
-        id,
-        created_at: ic.time(),
-        proposer: caller,
-        description,
-        destinationAddress,
-        amount,
-        votes: [],
-        adopted: false,
-        adopted_at: null,
-        rejected: false,
-        rejected_at: null
-    };
-
-    return {
-        ok: true
-    };
-}
+    TransferFee,
+    TransferResult
+} from 'azle/canisters/icp';
+import {
+    ICPCanister,
+    state
+} from '../backend';
+import { isSigner } from '../signers';
+import {
+    Vote,
+    VoteOnProposalResult,
+    VoteOnTransferProposalChecksResult,
+    State
+} from '../types';
 
 export function* voteOnTransferProposal(
     transferProposalId: string,
@@ -116,39 +27,21 @@ export function* voteOnTransferProposal(
 ): UpdateAsync<VoteOnProposalResult> {
     const caller = ic.caller();
     
-    if (isSigner(caller) === false) {
+    const checks_result = performChecks(
+        caller,
+        transferProposalId,
+        state.transferProposals
+    );
+
+    if (checks_result.ok === undefined) {
         return {
-            err: 'Only signers can approve a transfer proposal'
+            err: checks_result.err
         };
     }
 
-    let transferProposal = state.transferProposals[transferProposalId];
-
-    if (transferProposal === undefined) {
-        return {
-            err: `No transfer proposal found for transfer proposal id ${transferProposalId}`
-        };
-    }
-
-    if (transferProposal.adopted === true) {
-        return {
-            err: `Transfer proposal ${transferProposalId} already adopted`
-        };
-    }
-
-    if (transferProposal.rejected === true) {
-        return {
-            err: `Transfer proposal ${transferProposalId} already rejected`
-        };
-    }
-
-    const alreadyVoted = transferProposal.votes.find((vote) => vote.voter === caller) !== undefined;
-
-    if (alreadyVoted === true) {
-        return {
-            err: `You have already voted on this proposal`
-        };
-    }
+    // TODO once we can do cross-canister calls in nested functions
+    // TODO redo this section like the other proposal types, with a getMutator
+    let transferProposal = checks_result.ok;
 
     const newVotes: Vote[] = [
         ...transferProposal.votes,
@@ -259,5 +152,49 @@ export function* voteOnTransferProposal(
         ok: {
             voted: null
         }
+    };
+}
+
+function performChecks(
+    caller: Principal,
+    transferProposalId: string,
+    transferProposals: State['transferProposals']
+): VoteOnTransferProposalChecksResult {
+    if (isSigner(caller) === false) {
+        return {
+            err: 'Only signers can approve a transfer proposal'
+        };
+    }
+
+    const transferProposal = transferProposals[transferProposalId];
+
+    if (transferProposal === undefined) {
+        return {
+            err: `No transfer proposal found for transfer proposal id ${transferProposalId}`
+        };
+    }
+
+    if (transferProposal.adopted === true) {
+        return {
+            err: `Transfer proposal ${transferProposalId} already adopted`
+        };
+    }
+
+    if (transferProposal.rejected === true) {
+        return {
+            err: `Transfer proposal ${transferProposalId} already rejected`
+        };
+    }
+
+    const alreadyVoted = transferProposal.votes.find((vote) => vote.voter === caller) !== undefined;
+
+    if (alreadyVoted === true) {
+        return {
+            err: `You have already voted on this proposal`
+        };
+    }
+
+    return {
+        ok: transferProposal
     };
 }

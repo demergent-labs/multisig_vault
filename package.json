@@ -1,9 +1,13 @@
 {
     "scripts": {
-        "build": "cd canisters/frontend && npm install && npm run build"
+        "build": "dfx generate && cd canisters/frontend && npm install && npm run build",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "azle": "0.1.0",
         "hash.js": "1.1.7"
+    },
+    "devDependencies": {
+        "typescript": "4.4.4"
     }
 }

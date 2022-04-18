@@ -1,39 +1,35 @@
 import {
-    Principal,
-    nat8,
-    Init,
-    UpdateAsync,
-    nat64,
-    Query,
+    CanisterResult,
     ic,
-    CanisterResult
+    Init,
+    nat8,
+    nat64,
+    Principal,
+    Query,
+    UpdateAsync
 } from 'azle';
 import {
-    State
-} from './types';
-import {
+    binaryAddressFromPrincipal,
+    hexAddressFromPrincipal,
     ICP,
     Tokens
-} from './icp';
-import {
-    binaryAddressFromPrincipal,
-    hexAddressFromPrincipal
-} from './address';
+} from 'azle/canisters/icp';
 import { process } from './process_polyfill';
+import {
+    State,
+    VaultBalanceResult
+} from './types';
 
-// TODO add a get controllers method and a get cycles method
-// TODO it would be cool if the cycles usage could be calculated somehow
+export const ICPCanister = ic.canisters.ICP<ICP>(process.env.ICP_LEDGER_CANISTER_ID);
 
 export let state: State = {
     signers: {},
     signerProposals: {},
-    transfers: {},
-    transferProposals: {},
     threshold: 0,
-    thresholdProposals: {}
+    thresholdProposals: {},
+    transfers: {},
+    transferProposals: {}
 };
-
-export const ICPCanister = ic.canisters.ICP<ICP>(process.env.ICP_LEDGER_CANISTER_ID);
 
 export function init(
     signers: Principal[],
@@ -49,22 +45,20 @@ export function init(
     state.threshold = threshold;
 }
 
-export function getProcess(): Query<string> {
-    return JSON.stringify(process);
-}
-
-export function* getVaultBalance(): UpdateAsync<nat64> {
-    const result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
+export function* getVaultBalance(): UpdateAsync<VaultBalanceResult> {
+    const account_balance_canister_result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
         account: binaryAddressFromPrincipal(ic.id(), 0)
     });
 
-    // TODO we should probably return a result here
-    if (result.ok !== undefined) {
-        return result.ok.e8s;
+    if (account_balance_canister_result.ok === undefined) {
+        return {
+            err: account_balance_canister_result.err
+        };
     }
-    else {
-        return 0n;
-    }
+
+    return {
+        ok: account_balance_canister_result.ok.e8s
+    };
 }
 
 export function getCanisterPrincipal(): Query<string> {
@@ -75,8 +69,8 @@ export function getCanisterAddress(): Query<string> {
     return hexAddressFromPrincipal(ic.id(), 0);
 }
 
-export function getAddress(principal: Principal): Query<string> {
-    return hexAddressFromPrincipal(principal, 0);
+export function getCanisterCycles(): Query<nat64> {
+    return ic.canisterBalance();
 }
 
 export {

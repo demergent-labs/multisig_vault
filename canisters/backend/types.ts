@@ -6,7 +6,6 @@ import {
     Opt
 } from 'azle';
 
-// TODO add the timelock vault
 export type State = {
     signers: {
         [principal: Principal]: Principal | undefined;
@@ -57,7 +56,7 @@ export type TransferProposal = {
     created_at: nat64;
     proposer: Principal;
     description: string;
-    destinationAddress: string; // TODO it would be nice to make this an Address type, just not sure I have that functionality
+    destinationAddress: Address;
     amount: nat64;
     votes: Vote[];
     adopted: boolean;
@@ -66,7 +65,7 @@ export type TransferProposal = {
     rejected_at: Opt<nat64>;
 };
 
-export type Address = string; // TODO would be nice to support this kind of type alias
+export type Address = string;
 
 export type Vote = {
     voter: Principal;
@@ -94,3 +93,34 @@ export type Transfer = {
     to: Principal;
     amount: nat64;
 };
+
+export type VaultBalanceResult = Variant<{
+    ok?: nat64;
+    err?: string;
+}>;
+
+export type VoteOnSignerProposalChecksResult = {
+    ok?: SignerProposal;
+    err?: string;
+};
+
+export type VoteOnThresholdProposalChecksResult = {
+    ok?: ThresholdProposal;
+    err?: string;
+};
+
+export type VoteOnTransferProposalChecksResult = {
+    ok?: TransferProposal;
+    err?: string;
+};
+
+export type ProposeTransferChecksResult = Variant<{
+    ok?: {
+        randomness: nat8[];
+    };
+    err?: string;
+}>;
+
+export type VoteMutator = () => VoteOnProposalResult;
+
+export type DefaultMutator = () => DefaultResult;

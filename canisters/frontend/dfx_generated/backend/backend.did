@@ -105,6 +105,8 @@ type DefaultResult = variant { "ok": bool; "err": text };
 
 type VoteOnProposalResult = variant { "ok": VoteOnProposalAction; "err": text };
 
+type VaultBalanceResult = variant { "ok": nat64; "err": text };
+
 type TransferResult = variant { "Ok": nat64; "Err": TransferError };
 
 type VoteOnProposalAction = variant { "voted": null; "adopted": null; "rejected": null };
@@ -120,15 +122,14 @@ service: (vec principal, nat8) -> {
     "getThresholdProposals": () -> (vec ThresholdProposal) query;
     "getTransfers": () -> (vec Transfer) query;
     "getTransferProposals": () -> (vec TransferProposal) query;
-    "getProcess": () -> (text) query;
     "getCanisterPrincipal": () -> (text) query;
     "getCanisterAddress": () -> (text) query;
-    "getAddress": (principal) -> (text) query;
+    "getCanisterCycles": () -> (nat64) query;
     "proposeSigner": (text, principal) -> (DefaultResult);
     "voteOnSignerProposal": (text, bool) -> (VoteOnProposalResult);
     "proposeThreshold": (text, nat8) -> (DefaultResult);
     "voteOnThresholdProposal": (text, bool) -> (VoteOnProposalResult);
     "proposeTransfer": (text, text, nat64) -> (DefaultResult);
     "voteOnTransferProposal": (text, bool) -> (VoteOnProposalResult);
-    "getVaultBalance": () -> (nat64);
+    "getVaultBalance": () -> (VaultBalanceResult);
 }

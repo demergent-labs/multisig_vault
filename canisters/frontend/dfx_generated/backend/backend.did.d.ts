@@ -79,6 +79,8 @@ export interface TransferProposal {
 }
 export type TransferResult = { 'Ok' : bigint } |
   { 'Err' : TransferError };
+export type VaultBalanceResult = { 'ok' : bigint } |
+  { 'err' : string };
 export interface Vote { 'adopt' : boolean, 'voter' : Principal }
 export type VoteOnProposalAction = { 'voted' : null } |
   { 'rejected' : null } |
@@ -86,17 +88,16 @@ export type VoteOnProposalAction = { 'voted' : null } |
 export type VoteOnProposalResult = { 'ok' : VoteOnProposalAction } |
   { 'err' : string };
 export interface _SERVICE {
-  'getAddress' : (arg_0: Principal) => Promise<string>,
   'getCanisterAddress' : () => Promise<string>,
+  'getCanisterCycles' : () => Promise<bigint>,
   'getCanisterPrincipal' : () => Promise<string>,
-  'getProcess' : () => Promise<string>,
   'getSignerProposals' : () => Promise<Array<SignerProposal>>,
   'getSigners' : () => Promise<Array<Principal>>,
   'getThreshold' : () => Promise<number>,
   'getThresholdProposals' : () => Promise<Array<ThresholdProposal>>,
   'getTransferProposals' : () => Promise<Array<TransferProposal>>,
   'getTransfers' : () => Promise<Array<Transfer>>,
-  'getVaultBalance' : () => Promise<bigint>,
+  'getVaultBalance' : () => Promise<VaultBalanceResult>,
   'proposeSigner' : (arg_0: string, arg_1: Principal) => Promise<DefaultResult>,
   'proposeThreshold' : (arg_0: string, arg_1: number) => Promise<DefaultResult>,
   'proposeTransfer' : (arg_0: string, arg_1: string, arg_2: bigint) => Promise<
