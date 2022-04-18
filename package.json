@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "build": "dfx generate && cd canisters/frontend && npm install && npm run build",
+        "build": "dfx generate backend && cd canisters/frontend && npm install && npm run build",
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
