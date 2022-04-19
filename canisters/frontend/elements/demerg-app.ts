@@ -489,9 +489,27 @@ class DemergApp extends HTMLElement {
 
         return html`
             <style>
+                .main-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    width: 100%;
+                    height: 100%;
+                    padding: 1rem;
+                }
+
+                .proposals-container {
+                    width: 50%;
+                    padding-bottom: 1rem;
+                }
+
                 /* TODO I would prefer to use classes provided by the ui5 web components, but I need more info: https://github.com/SAP/ui5-webcomponents/issues/5094 */
                 .dialog-footer {
                     padding: .5rem;
+                }
+
+                .dialog-footer-space {
+                    flex: 1;
                 }
             </style>
 
@@ -513,577 +531,580 @@ class DemergApp extends HTMLElement {
                 </ui5-link>
             </ui5-bar>
 
-            <ui5-card>
-                <ui5-card-header title-text="Threshold" subtitle-text="${thresholdSubtitleText}">
-                    <div slot="action">
-                        <ui5-button
-                            design="Emphasized"
-                            @click=${() => this.store.hideCreateThresholdProposal = false}
-                        >
-                            Create Proposal
-                        </ui5-button>
-                        <ui5-button
-                            ?hidden=${!state.hideOpenThresholdProposals}
-                            @click=${() => this.store.hideOpenThresholdProposals = false}
-                        >
-                            View Open Proposals
-                        </ui5-button>
-                        <ui5-button
-                            ?hidden=${state.hideOpenThresholdProposals}
-                            @click=${() => this.store.hideOpenThresholdProposals = true}
-                        >
-                            View Closed Proposals
-                        </ui5-button>
-                    </div>
-                </ui5-card-header>
-
-                <ui5-table no-data-text="No ${state.hideOpenThresholdProposals === true ? 'closed' : 'open'} proposals">
-                    <ui5-table-column slot="columns">
-                        <ui5-label>ID</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Created At</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Proposer</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Description</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>New Threshold</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Votes For</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Votes Against</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Status</ui5-label>
-                    </ui5-table-column>
-
-                    ${state.hideOpenThresholdProposals === false ? html`
-                        <ui5-table-column slot="columns"></ui5-table-column>
-                        <ui5-table-column slot="columns"></ui5-table-column>
-                    ` : ''}
-
-                    ${state.thresholdProposals.filter((thresholdProposal) => {
-                        const open = thresholdProposal.adopted === false && thresholdProposal.rejected === false;
-                        const hidden = (open && state.hideOpenThresholdProposals === true) || (!open && state.hideOpenThresholdProposals === false);
-
-                        return hidden === false;
-                    }).map((thresholdProposal) => {
-                        const idTrimmed = `${thresholdProposal.id.slice(0, 5)}...${thresholdProposal.id.slice(thresholdProposal.id.length - 5, thresholdProposal.id.length)}`;
-                        const proposerTrimmed = `${thresholdProposal.proposer.toString().slice(0, 5)}...${thresholdProposal.proposer.toString().slice(thresholdProposal.proposer.toString().length - 5, thresholdProposal.proposer.toString().length)}`;
-
-                        const votesFor = thresholdProposal.votes.filter((vote) => vote.adopt === true).length;
-                        const votesAgainst = thresholdProposal.votes.filter((vote) => vote.adopt === false).length;
-
-                        const status = thresholdProposal.adopted === true ?
-                            `Adopted ${new Date(Number((thresholdProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : thresholdProposal.rejected === true ?
-                                `Rejected ${new Date(Number((thresholdProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
-
-                        return html`
-                            <ui5-table-row>
-                                <ui5-table-cell>
-                                    <ui5-label title="${thresholdProposal.id}">${idTrimmed}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${new Date(Number(thresholdProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label title="${thresholdProposal.proposer}">${proposerTrimmed}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${thresholdProposal.description}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${thresholdProposal.threshold}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${votesFor}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${votesAgainst}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${status}</ui5-label>
-                                </ui5-table-cell>
-
-                                ${state.hideOpenThresholdProposals === false ? html`
-                                    <ui5-table-cell>
-                                        <ui5-busy-indicator
-                                            size="Small"
-                                            .active=${state.votingOnProposals[thresholdProposal.id]?.adopting}
-                                        >
-                                            <ui5-button
-                                                design="Positive"
-                                                @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, true)}
-                                            >
-                                                Adopt
-                                            </ui5-button>
-                                        </ui5-busy-indicator>
-                                    </ui5-table-cell>
-
-                                    <ui5-table-cell>
-                                        <ui5-busy-indicator
-                                            size="Small"
-                                            .active=${state.votingOnProposals[thresholdProposal.id]?.rejecting}
-                                        >
-                                            <ui5-button
-                                                design="Negative"
-                                                @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, false)}
-                                            >
-                                                Reject
-                                            </ui5-button>
-                                        </ui5-busy-indicator>
-                                    </ui5-table-cell>
-                                ` : ''}
-                            </ui5-table-row>
-                        `;
-                    })}
-                </ui5-table>
-            </ui5-card>
-
-            ${state.hideCreateThresholdProposal === false ? html`
-                <ui5-dialog
-                    header-text="Threshold Proposal"
-                    .open=${true}
-                >
-                    <section class="login-form">
-                        <div>
-                            <ui5-label for="input-threshold-proposal-description" required>Description:</ui5-label>
-                            <ui5-input id="input-threshold-proposal-description"></ui5-input>
-                        </div>
-
-                        <div>
-                            <ui5-label for="input-threshold-proposal-threshold" required>Threshold:</ui5-label>
-                            <ui5-input id="input-threshold-proposal-threshold" type="Number"></ui5-input>
-                        </div>
-                    </section>
-
-                    <div slot="footer" class="dialog-footer">
-                        <div style="flex: 1"></div>
-                        <ui5-busy-indicator
-                            size="Small"
-                            .active=${state.creatingThresholdProposal}
-                        >
+            <div class="main-container">
+                <ui5-card class="proposals-container">
+                    <ui5-card-header title-text="Threshold" subtitle-text="${thresholdSubtitleText}">
+                        <div slot="action">
                             <ui5-button
                                 design="Emphasized"
-                                @click=${() => this.handleCreateThresholdProposalClick()}
+                                @click=${() => this.store.hideCreateThresholdProposal = false}
                             >
-                                Create
+                                Create Proposal
                             </ui5-button>
-
-                            <ui5-button @click=${() => this.store.hideCreateThresholdProposal = true}>Cancel</ui5-button>
-                        </ui5-busy-indicator>
-                    </div>
-                </ui5-dialog>
-            ` : ''}
-
-            <ui5-card>
-                <ui5-card-header title-text="Signers">
-                    <div slot="action">
-                        <ui5-button
-                            design="Emphasized"
-                            @click=${() => this.store.hideCreateSignerProposal = false}
-                        >
-                            Create Proposal
-                        </ui5-button>
-                        <ui5-button
-                            ?hidden=${!state.hideOpenSignerProposals}
-                            @click=${() => this.store.hideOpenSignerProposals = false}
-                        >
-                            View Open Proposals
-                        </ui5-button>
-                        <ui5-button
-                            ?hidden=${state.hideOpenSignerProposals}
-                            @click=${() => this.store.hideOpenSignerProposals = true}
-                        >
-                            View Closed Proposals
-                        </ui5-button>
-                    </div>
-                </ui5-card-header>
-
-                <div style="padding-bottom: .5rem; padding-left: .5rem">
-                    ${state.signers.value.map((signer, index) => {
-                        return html`
-                            <div style="padding-bottom: .5rem">
-                                <ui5-badge style="padding: .5rem; font-size: 1.25rem" color-scheme="${(index % 10) + 1}">${signer.toString()}</ui5-badge>
+                            <ui5-button
+                                ?hidden=${!state.hideOpenThresholdProposals}
+                                @click=${() => this.store.hideOpenThresholdProposals = false}
+                            >
+                                View Open Proposals
+                            </ui5-button>
+                            <ui5-button
+                                ?hidden=${state.hideOpenThresholdProposals}
+                                @click=${() => this.store.hideOpenThresholdProposals = true}
+                            >
+                                View Closed Proposals
+                            </ui5-button>
+                        </div>
+                    </ui5-card-header>
+    
+                    <ui5-table no-data-text="No ${state.hideOpenThresholdProposals === true ? 'closed' : 'open'} proposals">
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>ID</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Created At</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Proposer</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Description</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>New Threshold</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Votes For</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Votes Against</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Status</ui5-label>
+                        </ui5-table-column>
+    
+                        ${state.hideOpenThresholdProposals === false ? html`
+                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
+                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
+                        ` : ''}
+    
+                        ${state.thresholdProposals.filter((thresholdProposal) => {
+                            const open = thresholdProposal.adopted === false && thresholdProposal.rejected === false;
+                            const hidden = (open && state.hideOpenThresholdProposals === true) || (!open && state.hideOpenThresholdProposals === false);
+    
+                            return hidden === false;
+                        }).map((thresholdProposal) => {
+                            const idTrimmed = `${thresholdProposal.id.slice(0, 5)}...${thresholdProposal.id.slice(thresholdProposal.id.length - 5, thresholdProposal.id.length)}`;
+                            const proposerTrimmed = `${thresholdProposal.proposer.toString().slice(0, 5)}...${thresholdProposal.proposer.toString().slice(thresholdProposal.proposer.toString().length - 5, thresholdProposal.proposer.toString().length)}`;
+    
+                            const votesFor = thresholdProposal.votes.filter((vote) => vote.adopt === true).length;
+                            const votesAgainst = thresholdProposal.votes.filter((vote) => vote.adopt === false).length;
+    
+                            const status = thresholdProposal.adopted === true ?
+                                `Adopted ${new Date(Number((thresholdProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : thresholdProposal.rejected === true ?
+                                    `Rejected ${new Date(Number((thresholdProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
+    
+                            return html`
+                                <ui5-table-row>
+                                    <ui5-table-cell>
+                                        <ui5-label title="${thresholdProposal.id}">${idTrimmed}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${new Date(Number(thresholdProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label title="${thresholdProposal.proposer}">${proposerTrimmed}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${thresholdProposal.description}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${thresholdProposal.threshold}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${votesFor}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${votesAgainst}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${status}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    ${state.hideOpenThresholdProposals === false ? html`
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[thresholdProposal.id]?.adopting}
+                                            >
+                                                <ui5-button
+                                                    design="Positive"
+                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, true)}
+                                                >
+                                                    Adopt
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+    
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[thresholdProposal.id]?.rejecting}
+                                            >
+                                                <ui5-button
+                                                    design="Negative"
+                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, false)}
+                                                >
+                                                    Reject
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+                                    ` : ''}
+                                </ui5-table-row>
+                            `;
+                        })}
+                    </ui5-table>
+                </ui5-card>
+    
+                ${state.hideCreateThresholdProposal === false ? html`
+                    <ui5-dialog
+                        header-text="Threshold Proposal"
+                        .open=${true}
+                    >
+                        <section class="login-form">
+                            <div>
+                                <ui5-label for="input-threshold-proposal-description" required>Description:</ui5-label>
+                                <ui5-input id="input-threshold-proposal-description"></ui5-input>
                             </div>
-                        `;
-                    })}
-                </div>
-
-                <ui5-table no-data-text="No ${state.hideOpenSignerProposals === true ? 'closed' : 'open'} proposals">
-                    <ui5-table-column slot="columns">
-                        <ui5-label>ID</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Created At</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Proposer</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Description</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Signer</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Votes For</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Votes Against</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Status</ui5-label>
-                    </ui5-table-column>
-
-                    ${state.hideOpenSignerProposals === false ? html`
-                        <ui5-table-column slot="columns"></ui5-table-column>
-                        <ui5-table-column slot="columns"></ui5-table-column>
-                    ` : ''}
-
-                    ${state.signerProposals.filter((signerProposal) => {
-                        const open = signerProposal.adopted === false && signerProposal.rejected === false;
-                        const hidden = (open && state.hideOpenSignerProposals === true) || (!open && state.hideOpenSignerProposals === false);
-
-                        return hidden === false;
-                    }).map((signerProposal) => {
-                        const idTrimmed = `${signerProposal.id.slice(0, 5)}...${signerProposal.id.slice(signerProposal.id.length - 5, signerProposal.id.length)}`;
-                        const proposerTrimmed = `${signerProposal.proposer.toString().slice(0, 5)}...${signerProposal.proposer.toString().slice(signerProposal.proposer.toString().length - 5, signerProposal.proposer.toString().length)}`;
-
-                        const votesFor = signerProposal.votes.filter((vote) => vote.adopt === true).length;
-                        const votesAgainst = signerProposal.votes.filter((vote) => vote.adopt === false).length;
-
-                        const status = signerProposal.adopted === true ?
-                            `Adopted ${new Date(Number((signerProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : signerProposal.rejected === true ?
-                                `Rejected ${new Date(Number((signerProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
-
-                        return html`
-                            <ui5-table-row>
-                                <ui5-table-cell>
-                                    <ui5-label title="${signerProposal.id}">${idTrimmed}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${new Date(Number(signerProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label title="${signerProposal.proposer}">${proposerTrimmed}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${signerProposal.description}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${signerProposal.signer}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${votesFor}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${votesAgainst}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${status}</ui5-label>
-                                </ui5-table-cell>
-
-                                ${state.hideOpenSignerProposals === false ? html`
-                                    <ui5-table-cell>
-                                        <ui5-busy-indicator
-                                            size="Small"
-                                            .active=${state.votingOnProposals[signerProposal.id]?.adopting}
-                                        >
-                                            <ui5-button
-                                                design="Positive"
-                                                @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, true)}
-                                            >
-                                                Adopt
-                                            </ui5-button>
-                                        </ui5-busy-indicator>
-                                    </ui5-table-cell>
-
-                                    <ui5-table-cell>
-                                        <ui5-busy-indicator
-                                            size="Small"
-                                            .active=${state.votingOnProposals[signerProposal.id]?.rejecting}
-                                        >
-                                            <ui5-button
-                                                design="Negative"
-                                                @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, false)}
-                                            >
-                                                Reject
-                                            </ui5-button>
-                                        </ui5-busy-indicator>
-                                    </ui5-table-cell>
-                                ` : ''}
-                            </ui5-table-row>
-                        `;
-                    })}
-                </ui5-table>
-            </ui5-card>
-
-            ${state.hideCreateSignerProposal === false ? html`
-                <ui5-dialog
-                    header-text="Signer Proposal"
-                    .open=${true}
-                >
-                    <section class="login-form">
-                        <div>
-                            <ui5-label for="input-signer-proposal-description" required>Description:</ui5-label>
-                            <ui5-input id="input-signer-proposal-description"></ui5-input>
+    
+                            <div>
+                                <ui5-label for="input-threshold-proposal-threshold" required>Threshold:</ui5-label>
+                                <ui5-input id="input-threshold-proposal-threshold" type="Number"></ui5-input>
+                            </div>
+                        </section>
+    
+                        <div slot="footer" class="dialog-footer">
+                            <div class="dialog-footer-space"></div>
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${state.creatingThresholdProposal}
+                            >
+                                <ui5-button
+                                    design="Emphasized"
+                                    @click=${() => this.handleCreateThresholdProposalClick()}
+                                >
+                                    Create
+                                </ui5-button>
+    
+                                <ui5-button @click=${() => this.store.hideCreateThresholdProposal = true}>Cancel</ui5-button>
+                            </ui5-busy-indicator>
                         </div>
-
-                        <div>
-                            <ui5-label for="input-signer-proposal-signer" required>Signer:</ui5-label>
-                            <ui5-input id="input-signer-proposal-signer"></ui5-input>
-                        </div>
-                    </section>
-
-                    <div slot="footer" class="dialog-footer">
-                        <div style="flex: 1"></div>
-                        <ui5-busy-indicator
-                            size="Small"
-                            .active=${state.creatingSignerProposal}
-                        >
+                    </ui5-dialog>
+                ` : ''}
+    
+                <ui5-card class="proposals-container">
+                    <ui5-card-header title-text="Signers">
+                        <div slot="action">
                             <ui5-button
                                 design="Emphasized"
-                                @click=${() => this.handleCreateSignerProposalClick()}
+                                @click=${() => this.store.hideCreateSignerProposal = false}
                             >
-                                Create
+                                Create Proposal
                             </ui5-button>
-
-                            <ui5-button @click=${() => this.store.hideCreateSignerProposal = true}>Cancel</ui5-button>
-                        </ui5-busy-indicator>
+                            <ui5-button
+                                ?hidden=${!state.hideOpenSignerProposals}
+                                @click=${() => this.store.hideOpenSignerProposals = false}
+                            >
+                                View Open Proposals
+                            </ui5-button>
+                            <ui5-button
+                                ?hidden=${state.hideOpenSignerProposals}
+                                @click=${() => this.store.hideOpenSignerProposals = true}
+                            >
+                                View Closed Proposals
+                            </ui5-button>
+                        </div>
+                    </ui5-card-header>
+    
+                    <div style="padding-bottom: .5rem; padding-left: .5rem">
+                        ${state.signers.value.map((signer, index) => {
+                            return html`
+                                <div style="padding-bottom: .5rem">
+                                    <ui5-badge style="padding: .5rem; font-size: 1.25rem" color-scheme="${(index % 10) + 1}">${signer.toString()}</ui5-badge>
+                                </div>
+                            `;
+                        })}
                     </div>
-                </ui5-dialog>
-            ` : ''}
-
-            <ui5-card>
-                <ui5-card-header title-text="Transfers" subtitle-text="${transfersSubtitleText}">
-                    <div slot="action">
-                        <ui5-button
-                            design="Emphasized"
-                            @click=${() => this.store.hideCreateTransferProposal = false}
-                        >
-                            Create Proposal
-                        </ui5-button>
-                        <ui5-button
-                            ?hidden=${!state.hideOpenTransferProposals}
-                            @click=${() => this.store.hideOpenTransferProposals = false}
-                        >
-                            View Open Proposals
-                        </ui5-button>
-                        <ui5-button
-                            ?hidden=${state.hideOpenTransferProposals}
-                            @click=${() => this.store.hideOpenTransferProposals = true}
-                        >
-                            View Closed Proposals
-                        </ui5-button>
-                    </div>
-                </ui5-card-header>
-
-                <ui5-table no-data-text="No ${state.hideOpenTransferProposals === true ? 'closed' : 'open'} proposals">
-                    <ui5-table-column slot="columns">
-                        <ui5-label>ID</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Created At</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Proposer</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Description</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Destination Address</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Amount</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Votes For</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Votes Against</ui5-label>
-                    </ui5-table-column>
-
-                    <ui5-table-column slot="columns">
-                        <ui5-label>Status</ui5-label>
-                    </ui5-table-column>
-
-                    ${state.hideOpenTransferProposals === false ? html`
-                        <ui5-table-column slot="columns"></ui5-table-column>
-                        <ui5-table-column slot="columns"></ui5-table-column>
-                    ` : ''}
-
-                    ${state.transferProposals.filter((transferProposal) => {
-                        const open = transferProposal.adopted === false && transferProposal.rejected === false;
-                        const hidden = (open && state.hideOpenTransferProposals === true) || (!open && state.hideOpenTransferProposals === false);
-
-                        return hidden === false;
-                    }).map((transferProposal) => {
-                        const idTrimmed = `${transferProposal.id.slice(0, 5)}...${transferProposal.id.slice(transferProposal.id.length - 5, transferProposal.id.length)}`;
-                        const proposerTrimmed = `${transferProposal.proposer.toString().slice(0, 5)}...${transferProposal.proposer.toString().slice(transferProposal.proposer.toString().length - 5, transferProposal.proposer.toString().length)}`;
-
-                        const votesFor = transferProposal.votes.filter((vote) => vote.adopt === true).length;
-                        const votesAgainst = transferProposal.votes.filter((vote) => vote.adopt === false).length;
-
-                        const status = transferProposal.adopted === true ?
-                            `Adopted ${new Date(Number((transferProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : transferProposal.rejected === true ?
-                                `Rejected ${new Date(Number((transferProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
-
-                        return html`
-                            <ui5-table-row>
-                                <ui5-table-cell>
-                                    <ui5-label title="${transferProposal.id}">${idTrimmed}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${new Date(Number(transferProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label title="${transferProposal.proposer}">${proposerTrimmed}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${transferProposal.description}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${transferProposal.destinationAddress}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${Number(transferProposal.amount * 10000n / BigInt(10**8)) / 10000} ICP</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${votesFor}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${votesAgainst}</ui5-label>
-                                </ui5-table-cell>
-
-                                <ui5-table-cell>
-                                    <ui5-label>${status}</ui5-label>
-                                </ui5-table-cell>
-
-                                ${state.hideOpenTransferProposals === false ? html`
+    
+                    <ui5-table no-data-text="No ${state.hideOpenSignerProposals === true ? 'closed' : 'open'} proposals">
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>ID</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Created At</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Proposer</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Description</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Signer</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Votes For</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Votes Against</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Status</ui5-label>
+                        </ui5-table-column>
+    
+                        ${state.hideOpenSignerProposals === false ? html`
+                            <ui5-table-column slot="columns"></ui5-table-column>
+                            <ui5-table-column slot="columns"></ui5-table-column>
+                        ` : ''}
+    
+                        ${state.signerProposals.filter((signerProposal) => {
+                            const open = signerProposal.adopted === false && signerProposal.rejected === false;
+                            const hidden = (open && state.hideOpenSignerProposals === true) || (!open && state.hideOpenSignerProposals === false);
+    
+                            return hidden === false;
+                        }).map((signerProposal) => {
+                            const idTrimmed = `${signerProposal.id.slice(0, 5)}...${signerProposal.id.slice(signerProposal.id.length - 5, signerProposal.id.length)}`;
+                            const proposerTrimmed = `${signerProposal.proposer.toString().slice(0, 5)}...${signerProposal.proposer.toString().slice(signerProposal.proposer.toString().length - 5, signerProposal.proposer.toString().length)}`;
+    
+                            const votesFor = signerProposal.votes.filter((vote) => vote.adopt === true).length;
+                            const votesAgainst = signerProposal.votes.filter((vote) => vote.adopt === false).length;
+    
+                            const status = signerProposal.adopted === true ?
+                                `Adopted ${new Date(Number((signerProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : signerProposal.rejected === true ?
+                                    `Rejected ${new Date(Number((signerProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
+    
+                            return html`
+                                <ui5-table-row>
                                     <ui5-table-cell>
-                                        <ui5-busy-indicator
-                                            size="Small"
-                                            .active=${state.votingOnProposals[transferProposal.id]?.adopting}
-                                        >
-                                            <ui5-button
-                                                design="Positive"
-                                                @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, true)}
-                                            >
-                                                Adopt
-                                            </ui5-button>
-                                        </ui5-busy-indicator>
+                                        <ui5-label title="${signerProposal.id}">${idTrimmed}</ui5-label>
                                     </ui5-table-cell>
-
+    
                                     <ui5-table-cell>
-                                        <ui5-busy-indicator
-                                            size="Small"
-                                            .active=${state.votingOnProposals[transferProposal.id]?.rejecting}
-                                        >
-                                            <ui5-button
-                                                design="Negative"
-                                                @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, false)}
-                                            >
-                                                Reject
-                                            </ui5-button>
-                                        </ui5-busy-indicator>
+                                        <ui5-label>${new Date(Number(signerProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
                                     </ui5-table-cell>
-                                ` : ''}
-                            </ui5-table-row>
-                        `;
-                    })}
-                </ui5-table>
-            </ui5-card>
-
-            ${state.hideCreateTransferProposal === false ? html`
-                <ui5-dialog
-                    header-text="Transfer Proposal"
-                    .open=${true}
-                >
-                    <section class="login-form">
-                        <div>
-                            <ui5-label for="input-transfer-proposal-description" required>Description:</ui5-label>
-                            <ui5-input id="input-transfer-proposal-description"></ui5-input>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label title="${signerProposal.proposer}">${proposerTrimmed}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${signerProposal.description}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${signerProposal.signer}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${votesFor}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${votesAgainst}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${status}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    ${state.hideOpenSignerProposals === false ? html`
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[signerProposal.id]?.adopting}
+                                            >
+                                                <ui5-button
+                                                    design="Positive"
+                                                    @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, true)}
+                                                >
+                                                    Adopt
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+    
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[signerProposal.id]?.rejecting}
+                                            >
+                                                <ui5-button
+                                                    design="Negative"
+                                                    @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, false)}
+                                                >
+                                                    Reject
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+                                    ` : ''}
+                                </ui5-table-row>
+                            `;
+                        })}
+                    </ui5-table>
+                </ui5-card>
+    
+                ${state.hideCreateSignerProposal === false ? html`
+                    <ui5-dialog
+                        header-text="Signer Proposal"
+                        .open=${true}
+                    >
+                        <section class="login-form">
+                            <div>
+                                <ui5-label for="input-signer-proposal-description" required>Description:</ui5-label>
+                                <ui5-input id="input-signer-proposal-description"></ui5-input>
+                            </div>
+    
+                            <div>
+                                <ui5-label for="input-signer-proposal-signer" required>Signer:</ui5-label>
+                                <ui5-input id="input-signer-proposal-signer"></ui5-input>
+                            </div>
+                        </section>
+    
+                        <div slot="footer" class="dialog-footer">
+                            <div class="dialog-footer-space"></div>
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${state.creatingSignerProposal}
+                            >
+                                <ui5-button
+                                    design="Emphasized"
+                                    @click=${() => this.handleCreateSignerProposalClick()}
+                                >
+                                    Create
+                                </ui5-button>
+    
+                                <ui5-button @click=${() => this.store.hideCreateSignerProposal = true}>Cancel</ui5-button>
+                            </ui5-busy-indicator>
                         </div>
-
-                        <div>
-                            <ui5-label for="input-transfer-proposal-destination-address" required>Destination Address:</ui5-label>
-                            <ui5-input id="input-transfer-proposal-destination-address"></ui5-input>
-                        </div>
-
-                        <div>
-                            <ui5-label for="input-transfer-proposal-amount" required>Amount:</ui5-label>
-                            <ui5-input id="input-transfer-proposal-amount" type="Number"></ui5-input>
-                        </div>
-                    </section>
-
-                    <div slot="footer" class="dialog-footer">
-                        <div style="flex: 1"></div>
-                        <ui5-busy-indicator
-                            size="Small"
-                            .active=${state.creatingTransferProposal}
-                        >
+                    </ui5-dialog>
+                ` : ''}
+    
+                <ui5-card class="proposals-container">
+                    <ui5-card-header title-text="Transfers" subtitle-text="${transfersSubtitleText}">
+                        <div slot="action">
                             <ui5-button
                                 design="Emphasized"
-                                @click=${() => this.handleCreateTransferProposalClick()}
+                                @click=${() => this.store.hideCreateTransferProposal = false}
                             >
-                                Create
+                                Create Proposal
                             </ui5-button>
+                            <ui5-button
+                                ?hidden=${!state.hideOpenTransferProposals}
+                                @click=${() => this.store.hideOpenTransferProposals = false}
+                            >
+                                View Open Proposals
+                            </ui5-button>
+                            <ui5-button
+                                ?hidden=${state.hideOpenTransferProposals}
+                                @click=${() => this.store.hideOpenTransferProposals = true}
+                            >
+                                View Closed Proposals
+                            </ui5-button>
+                        </div>
+                    </ui5-card-header>
+    
+                    <ui5-table no-data-text="No ${state.hideOpenTransferProposals === true ? 'closed' : 'open'} proposals">
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>ID</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Created At</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Proposer</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Description</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Destination Address</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Amount</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Votes For</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Votes Against</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Status</ui5-label>
+                        </ui5-table-column>
+    
+                        ${state.hideOpenTransferProposals === false ? html`
+                            <ui5-table-column slot="columns"></ui5-table-column>
+                            <ui5-table-column slot="columns"></ui5-table-column>
+                        ` : ''}
+    
+                        ${state.transferProposals.filter((transferProposal) => {
+                            const open = transferProposal.adopted === false && transferProposal.rejected === false;
+                            const hidden = (open && state.hideOpenTransferProposals === true) || (!open && state.hideOpenTransferProposals === false);
+    
+                            return hidden === false;
+                        }).map((transferProposal) => {
+                            const idTrimmed = `${transferProposal.id.slice(0, 5)}...${transferProposal.id.slice(transferProposal.id.length - 5, transferProposal.id.length)}`;
+                            const proposerTrimmed = `${transferProposal.proposer.toString().slice(0, 5)}...${transferProposal.proposer.toString().slice(transferProposal.proposer.toString().length - 5, transferProposal.proposer.toString().length)}`;
+    
+                            const votesFor = transferProposal.votes.filter((vote) => vote.adopt === true).length;
+                            const votesAgainst = transferProposal.votes.filter((vote) => vote.adopt === false).length;
+    
+                            const status = transferProposal.adopted === true ?
+                                `Adopted ${new Date(Number((transferProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : transferProposal.rejected === true ?
+                                    `Rejected ${new Date(Number((transferProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
+    
+                            return html`
+                                <ui5-table-row>
+                                    <ui5-table-cell>
+                                        <ui5-label title="${transferProposal.id}">${idTrimmed}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${new Date(Number(transferProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label title="${transferProposal.proposer}">${proposerTrimmed}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${transferProposal.description}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${transferProposal.destinationAddress}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${Number(transferProposal.amount * 10000n / BigInt(10**8)) / 10000} ICP</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${votesFor}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${votesAgainst}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${status}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    ${state.hideOpenTransferProposals === false ? html`
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[transferProposal.id]?.adopting}
+                                            >
+                                                <ui5-button
+                                                    design="Positive"
+                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, true)}
+                                                >
+                                                    Adopt
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+    
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[transferProposal.id]?.rejecting}
+                                            >
+                                                <ui5-button
+                                                    design="Negative"
+                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, false)}
+                                                >
+                                                    Reject
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+                                    ` : ''}
+                                </ui5-table-row>
+                            `;
+                        })}
+                    </ui5-table>
+                </ui5-card>
+    
+                ${state.hideCreateTransferProposal === false ? html`
+                    <ui5-dialog
+                        header-text="Transfer Proposal"
+                        .open=${true}
+                    >
+                        <section class="login-form">
+                            <div>
+                                <ui5-label for="input-transfer-proposal-description" required>Description:</ui5-label>
+                                <ui5-input id="input-transfer-proposal-description"></ui5-input>
+                            </div>
+    
+                            <div>
+                                <ui5-label for="input-transfer-proposal-destination-address" required>Destination Address:</ui5-label>
+                                <ui5-input id="input-transfer-proposal-destination-address"></ui5-input>
+                            </div>
+    
+                            <div>
+                                <ui5-label for="input-transfer-proposal-amount" required>Amount:</ui5-label>
+                                <ui5-input id="input-transfer-proposal-amount" type="Number"></ui5-input>
+                            </div>
+                        </section>
+    
+                        <div slot="footer" class="dialog-footer">
+                            <div class="dialog-footer-space"></div>
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${state.creatingTransferProposal}
+                            >
+                                <ui5-button
+                                    design="Emphasized"
+                                    @click=${() => this.handleCreateTransferProposalClick()}
+                                >
+                                    Create
+                                </ui5-button>
+    
+                                <ui5-button @click=${() => this.store.hideCreateTransferProposal = true}>Cancel</ui5-button>
+                            </ui5-busy-indicator>
+                        </div>
+                    </ui5-dialog>
+                ` : ''}
+            </div>
 
-                            <ui5-button @click=${() => this.store.hideCreateTransferProposal = true}>Cancel</ui5-button>
-                        </ui5-busy-indicator>
-                    </div>
-                </ui5-dialog>
-            ` : ''}
 
             <ui5-toast id="toast-proposal-created" placement="TopCenter">Proposal Created</ui5-toast>
             <ui5-toast id="toast-vote-recorded" placement="TopCenter">Vote Recorded</ui5-toast>
