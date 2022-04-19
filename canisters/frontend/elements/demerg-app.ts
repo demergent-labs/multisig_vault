@@ -539,23 +539,23 @@ class DemergApp extends HTMLElement {
 
             <div class="main-container">
                 <ui5-card class="proposals-container">
-                    <ui5-card-header title-text="Threshold" subtitle-text="${thresholdSubtitleText}">
+                    <ui5-card-header title-text="Transfers" subtitle-text="${transfersSubtitleText}">
                         <div slot="action">
                             <ui5-button
                                 design="Emphasized"
-                                @click=${() => this.store.hideCreateThresholdProposal = false}
+                                @click=${() => this.store.hideCreateTransferProposal = false}
                             >
                                 Create Proposal
                             </ui5-button>
                             <ui5-button
-                                ?hidden=${!state.hideOpenThresholdProposals}
-                                @click=${() => this.store.hideOpenThresholdProposals = false}
+                                ?hidden=${!state.hideOpenTransferProposals}
+                                @click=${() => this.store.hideOpenTransferProposals = false}
                             >
                                 View Open Proposals
                             </ui5-button>
                             <ui5-button
-                                ?hidden=${state.hideOpenThresholdProposals}
-                                @click=${() => this.store.hideOpenThresholdProposals = true}
+                                ?hidden=${state.hideOpenTransferProposals}
+                                @click=${() => this.store.hideOpenTransferProposals = true}
                             >
                                 View Closed Proposals
                             </ui5-button>
@@ -564,7 +564,7 @@ class DemergApp extends HTMLElement {
     
                     <ui5-table
                         class="proposals-table"
-                        no-data-text="No ${state.hideOpenThresholdProposals === true ? 'closed' : 'open'} proposals"
+                        no-data-text="No ${state.hideOpenTransferProposals === true ? 'closed' : 'open'} proposals"
                     >
                         <ui5-table-column slot="columns" demand-popin>
                             <ui5-label>ID</ui5-label>
@@ -583,7 +583,11 @@ class DemergApp extends HTMLElement {
                         </ui5-table-column>
     
                         <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>New Threshold</ui5-label>
+                            <ui5-label>Destination Address</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Amount</ui5-label>
                         </ui5-table-column>
     
                         <ui5-table-column slot="columns" demand-popin>
@@ -598,47 +602,51 @@ class DemergApp extends HTMLElement {
                             <ui5-label>Status</ui5-label>
                         </ui5-table-column>
     
-                        ${state.hideOpenThresholdProposals === false ? html`
-                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
-                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
+                        ${state.hideOpenTransferProposals === false ? html`
+                            <ui5-table-column slot="columns"></ui5-table-column>
+                            <ui5-table-column slot="columns"></ui5-table-column>
                         ` : ''}
     
-                        ${state.thresholdProposals.filter((thresholdProposal) => {
-                            const open = thresholdProposal.adopted === false && thresholdProposal.rejected === false;
-                            const hidden = (open && state.hideOpenThresholdProposals === true) || (!open && state.hideOpenThresholdProposals === false);
+                        ${state.transferProposals.filter((transferProposal) => {
+                            const open = transferProposal.adopted === false && transferProposal.rejected === false;
+                            const hidden = (open && state.hideOpenTransferProposals === true) || (!open && state.hideOpenTransferProposals === false);
     
                             return hidden === false;
-                        }).map((thresholdProposal) => {
-                            const idTrimmed = `${thresholdProposal.id.slice(0, 5)}...${thresholdProposal.id.slice(thresholdProposal.id.length - 5, thresholdProposal.id.length)}`;
-                            const proposerTrimmed = `${thresholdProposal.proposer.toString().slice(0, 5)}...${thresholdProposal.proposer.toString().slice(thresholdProposal.proposer.toString().length - 5, thresholdProposal.proposer.toString().length)}`;
+                        }).map((transferProposal) => {
+                            const idTrimmed = `${transferProposal.id.slice(0, 5)}...${transferProposal.id.slice(transferProposal.id.length - 5, transferProposal.id.length)}`;
+                            const proposerTrimmed = `${transferProposal.proposer.toString().slice(0, 5)}...${transferProposal.proposer.toString().slice(transferProposal.proposer.toString().length - 5, transferProposal.proposer.toString().length)}`;
     
-                            const votesFor = thresholdProposal.votes.filter((vote) => vote.adopt === true).length;
-                            const votesAgainst = thresholdProposal.votes.filter((vote) => vote.adopt === false).length;
+                            const votesFor = transferProposal.votes.filter((vote) => vote.adopt === true).length;
+                            const votesAgainst = transferProposal.votes.filter((vote) => vote.adopt === false).length;
     
-                            const status = thresholdProposal.adopted === true ?
-                                `Adopted ${new Date(Number((thresholdProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : thresholdProposal.rejected === true ?
-                                    `Rejected ${new Date(Number((thresholdProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
+                            const status = transferProposal.adopted === true ?
+                                `Adopted ${new Date(Number((transferProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : transferProposal.rejected === true ?
+                                    `Rejected ${new Date(Number((transferProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
     
                             return html`
                                 <ui5-table-row>
                                     <ui5-table-cell>
-                                        <ui5-label title="${thresholdProposal.id}">${idTrimmed}</ui5-label>
+                                        <ui5-label title="${transferProposal.id}">${idTrimmed}</ui5-label>
                                     </ui5-table-cell>
     
                                     <ui5-table-cell>
-                                        <ui5-label>${new Date(Number(thresholdProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
+                                        <ui5-label>${new Date(Number(transferProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
                                     </ui5-table-cell>
     
                                     <ui5-table-cell>
-                                        <ui5-label title="${thresholdProposal.proposer}">${proposerTrimmed}</ui5-label>
+                                        <ui5-label title="${transferProposal.proposer}">${proposerTrimmed}</ui5-label>
                                     </ui5-table-cell>
     
                                     <ui5-table-cell>
-                                        <ui5-label>${thresholdProposal.description}</ui5-label>
+                                        <ui5-label>${transferProposal.description}</ui5-label>
                                     </ui5-table-cell>
     
                                     <ui5-table-cell>
-                                        <ui5-label>${thresholdProposal.threshold}</ui5-label>
+                                        <ui5-label>${transferProposal.destinationAddress}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${Number(transferProposal.amount * 10000n / BigInt(10**8)) / 10000} ICP</ui5-label>
                                     </ui5-table-cell>
     
                                     <ui5-table-cell>
@@ -653,15 +661,15 @@ class DemergApp extends HTMLElement {
                                         <ui5-label>${status}</ui5-label>
                                     </ui5-table-cell>
     
-                                    ${state.hideOpenThresholdProposals === false ? html`
+                                    ${state.hideOpenTransferProposals === false ? html`
                                         <ui5-table-cell>
                                             <ui5-busy-indicator
                                                 size="Small"
-                                                .active=${state.votingOnProposals[thresholdProposal.id]?.adopting}
+                                                .active=${state.votingOnProposals[transferProposal.id]?.adopting}
                                             >
                                                 <ui5-button
                                                     design="Positive"
-                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, true)}
+                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, true)}
                                                 >
                                                     Adopt
                                                 </ui5-button>
@@ -671,11 +679,11 @@ class DemergApp extends HTMLElement {
                                         <ui5-table-cell>
                                             <ui5-busy-indicator
                                                 size="Small"
-                                                .active=${state.votingOnProposals[thresholdProposal.id]?.rejecting}
+                                                .active=${state.votingOnProposals[transferProposal.id]?.rejecting}
                                             >
                                                 <ui5-button
                                                     design="Negative"
-                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, false)}
+                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, false)}
                                                 >
                                                     Reject
                                                 </ui5-button>
@@ -688,20 +696,25 @@ class DemergApp extends HTMLElement {
                     </ui5-table>
                 </ui5-card>
     
-                ${state.hideCreateThresholdProposal === false ? html`
+                ${state.hideCreateTransferProposal === false ? html`
                     <ui5-dialog
-                        header-text="Threshold Proposal"
+                        header-text="Transfer Proposal"
                         .open=${true}
                     >
                         <section class="login-form">
                             <div>
-                                <ui5-label for="input-threshold-proposal-description" required>Description:</ui5-label>
-                                <ui5-input id="input-threshold-proposal-description"></ui5-input>
+                                <ui5-label for="input-transfer-proposal-description" required>Description:</ui5-label>
+                                <ui5-input id="input-transfer-proposal-description"></ui5-input>
                             </div>
     
                             <div>
-                                <ui5-label for="input-threshold-proposal-threshold" required>Threshold:</ui5-label>
-                                <ui5-input id="input-threshold-proposal-threshold" type="Number"></ui5-input>
+                                <ui5-label for="input-transfer-proposal-destination-address" required>Destination Address:</ui5-label>
+                                <ui5-input id="input-transfer-proposal-destination-address"></ui5-input>
+                            </div>
+    
+                            <div>
+                                <ui5-label for="input-transfer-proposal-amount" required>Amount:</ui5-label>
+                                <ui5-input id="input-transfer-proposal-amount" type="Number"></ui5-input>
                             </div>
                         </section>
     
@@ -709,16 +722,16 @@ class DemergApp extends HTMLElement {
                             <div class="dialog-footer-space"></div>
                             <ui5-busy-indicator
                                 size="Small"
-                                .active=${state.creatingThresholdProposal}
+                                .active=${state.creatingTransferProposal}
                             >
                                 <ui5-button
                                     design="Emphasized"
-                                    @click=${() => this.handleCreateThresholdProposalClick()}
+                                    @click=${() => this.handleCreateTransferProposalClick()}
                                 >
                                     Create
                                 </ui5-button>
     
-                                <ui5-button @click=${() => this.store.hideCreateThresholdProposal = true}>Cancel</ui5-button>
+                                <ui5-button @click=${() => this.store.hideCreateTransferProposal = true}>Cancel</ui5-button>
                             </ui5-busy-indicator>
                         </div>
                     </ui5-dialog>
@@ -947,25 +960,25 @@ class DemergApp extends HTMLElement {
                         </div>
                     </ui5-dialog>
                 ` : ''}
-    
+
                 <ui5-card class="proposals-container">
-                    <ui5-card-header title-text="Transfers" subtitle-text="${transfersSubtitleText}">
+                    <ui5-card-header title-text="Threshold" subtitle-text="${thresholdSubtitleText}">
                         <div slot="action">
                             <ui5-button
                                 design="Emphasized"
-                                @click=${() => this.store.hideCreateTransferProposal = false}
+                                @click=${() => this.store.hideCreateThresholdProposal = false}
                             >
                                 Create Proposal
                             </ui5-button>
                             <ui5-button
-                                ?hidden=${!state.hideOpenTransferProposals}
-                                @click=${() => this.store.hideOpenTransferProposals = false}
+                                ?hidden=${!state.hideOpenThresholdProposals}
+                                @click=${() => this.store.hideOpenThresholdProposals = false}
                             >
                                 View Open Proposals
                             </ui5-button>
                             <ui5-button
-                                ?hidden=${state.hideOpenTransferProposals}
-                                @click=${() => this.store.hideOpenTransferProposals = true}
+                                ?hidden=${state.hideOpenThresholdProposals}
+                                @click=${() => this.store.hideOpenThresholdProposals = true}
                             >
                                 View Closed Proposals
                             </ui5-button>
@@ -974,7 +987,7 @@ class DemergApp extends HTMLElement {
     
                     <ui5-table
                         class="proposals-table"
-                        no-data-text="No ${state.hideOpenTransferProposals === true ? 'closed' : 'open'} proposals"
+                        no-data-text="No ${state.hideOpenThresholdProposals === true ? 'closed' : 'open'} proposals"
                     >
                         <ui5-table-column slot="columns" demand-popin>
                             <ui5-label>ID</ui5-label>
@@ -993,11 +1006,7 @@ class DemergApp extends HTMLElement {
                         </ui5-table-column>
     
                         <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Destination Address</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Amount</ui5-label>
+                            <ui5-label>New Threshold</ui5-label>
                         </ui5-table-column>
     
                         <ui5-table-column slot="columns" demand-popin>
@@ -1012,51 +1021,47 @@ class DemergApp extends HTMLElement {
                             <ui5-label>Status</ui5-label>
                         </ui5-table-column>
     
-                        ${state.hideOpenTransferProposals === false ? html`
-                            <ui5-table-column slot="columns"></ui5-table-column>
-                            <ui5-table-column slot="columns"></ui5-table-column>
+                        ${state.hideOpenThresholdProposals === false ? html`
+                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
+                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
                         ` : ''}
     
-                        ${state.transferProposals.filter((transferProposal) => {
-                            const open = transferProposal.adopted === false && transferProposal.rejected === false;
-                            const hidden = (open && state.hideOpenTransferProposals === true) || (!open && state.hideOpenTransferProposals === false);
+                        ${state.thresholdProposals.filter((thresholdProposal) => {
+                            const open = thresholdProposal.adopted === false && thresholdProposal.rejected === false;
+                            const hidden = (open && state.hideOpenThresholdProposals === true) || (!open && state.hideOpenThresholdProposals === false);
     
                             return hidden === false;
-                        }).map((transferProposal) => {
-                            const idTrimmed = `${transferProposal.id.slice(0, 5)}...${transferProposal.id.slice(transferProposal.id.length - 5, transferProposal.id.length)}`;
-                            const proposerTrimmed = `${transferProposal.proposer.toString().slice(0, 5)}...${transferProposal.proposer.toString().slice(transferProposal.proposer.toString().length - 5, transferProposal.proposer.toString().length)}`;
+                        }).map((thresholdProposal) => {
+                            const idTrimmed = `${thresholdProposal.id.slice(0, 5)}...${thresholdProposal.id.slice(thresholdProposal.id.length - 5, thresholdProposal.id.length)}`;
+                            const proposerTrimmed = `${thresholdProposal.proposer.toString().slice(0, 5)}...${thresholdProposal.proposer.toString().slice(thresholdProposal.proposer.toString().length - 5, thresholdProposal.proposer.toString().length)}`;
     
-                            const votesFor = transferProposal.votes.filter((vote) => vote.adopt === true).length;
-                            const votesAgainst = transferProposal.votes.filter((vote) => vote.adopt === false).length;
+                            const votesFor = thresholdProposal.votes.filter((vote) => vote.adopt === true).length;
+                            const votesAgainst = thresholdProposal.votes.filter((vote) => vote.adopt === false).length;
     
-                            const status = transferProposal.adopted === true ?
-                                `Adopted ${new Date(Number((transferProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : transferProposal.rejected === true ?
-                                    `Rejected ${new Date(Number((transferProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
+                            const status = thresholdProposal.adopted === true ?
+                                `Adopted ${new Date(Number((thresholdProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : thresholdProposal.rejected === true ?
+                                    `Rejected ${new Date(Number((thresholdProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
     
                             return html`
                                 <ui5-table-row>
                                     <ui5-table-cell>
-                                        <ui5-label title="${transferProposal.id}">${idTrimmed}</ui5-label>
+                                        <ui5-label title="${thresholdProposal.id}">${idTrimmed}</ui5-label>
                                     </ui5-table-cell>
     
                                     <ui5-table-cell>
-                                        <ui5-label>${new Date(Number(transferProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
+                                        <ui5-label>${new Date(Number(thresholdProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
                                     </ui5-table-cell>
     
                                     <ui5-table-cell>
-                                        <ui5-label title="${transferProposal.proposer}">${proposerTrimmed}</ui5-label>
+                                        <ui5-label title="${thresholdProposal.proposer}">${proposerTrimmed}</ui5-label>
                                     </ui5-table-cell>
     
                                     <ui5-table-cell>
-                                        <ui5-label>${transferProposal.description}</ui5-label>
+                                        <ui5-label>${thresholdProposal.description}</ui5-label>
                                     </ui5-table-cell>
     
                                     <ui5-table-cell>
-                                        <ui5-label>${transferProposal.destinationAddress}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${Number(transferProposal.amount * 10000n / BigInt(10**8)) / 10000} ICP</ui5-label>
+                                        <ui5-label>${thresholdProposal.threshold}</ui5-label>
                                     </ui5-table-cell>
     
                                     <ui5-table-cell>
@@ -1071,15 +1076,15 @@ class DemergApp extends HTMLElement {
                                         <ui5-label>${status}</ui5-label>
                                     </ui5-table-cell>
     
-                                    ${state.hideOpenTransferProposals === false ? html`
+                                    ${state.hideOpenThresholdProposals === false ? html`
                                         <ui5-table-cell>
                                             <ui5-busy-indicator
                                                 size="Small"
-                                                .active=${state.votingOnProposals[transferProposal.id]?.adopting}
+                                                .active=${state.votingOnProposals[thresholdProposal.id]?.adopting}
                                             >
                                                 <ui5-button
                                                     design="Positive"
-                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, true)}
+                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, true)}
                                                 >
                                                     Adopt
                                                 </ui5-button>
@@ -1089,11 +1094,11 @@ class DemergApp extends HTMLElement {
                                         <ui5-table-cell>
                                             <ui5-busy-indicator
                                                 size="Small"
-                                                .active=${state.votingOnProposals[transferProposal.id]?.rejecting}
+                                                .active=${state.votingOnProposals[thresholdProposal.id]?.rejecting}
                                             >
                                                 <ui5-button
                                                     design="Negative"
-                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, false)}
+                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, false)}
                                                 >
                                                     Reject
                                                 </ui5-button>
@@ -1106,25 +1111,20 @@ class DemergApp extends HTMLElement {
                     </ui5-table>
                 </ui5-card>
     
-                ${state.hideCreateTransferProposal === false ? html`
+                ${state.hideCreateThresholdProposal === false ? html`
                     <ui5-dialog
-                        header-text="Transfer Proposal"
+                        header-text="Threshold Proposal"
                         .open=${true}
                     >
                         <section class="login-form">
                             <div>
-                                <ui5-label for="input-transfer-proposal-description" required>Description:</ui5-label>
-                                <ui5-input id="input-transfer-proposal-description"></ui5-input>
+                                <ui5-label for="input-threshold-proposal-description" required>Description:</ui5-label>
+                                <ui5-input id="input-threshold-proposal-description"></ui5-input>
                             </div>
     
                             <div>
-                                <ui5-label for="input-transfer-proposal-destination-address" required>Destination Address:</ui5-label>
-                                <ui5-input id="input-transfer-proposal-destination-address"></ui5-input>
-                            </div>
-    
-                            <div>
-                                <ui5-label for="input-transfer-proposal-amount" required>Amount:</ui5-label>
-                                <ui5-input id="input-transfer-proposal-amount" type="Number"></ui5-input>
+                                <ui5-label for="input-threshold-proposal-threshold" required>Threshold:</ui5-label>
+                                <ui5-input id="input-threshold-proposal-threshold" type="Number"></ui5-input>
                             </div>
                         </section>
     
@@ -1132,22 +1132,21 @@ class DemergApp extends HTMLElement {
                             <div class="dialog-footer-space"></div>
                             <ui5-busy-indicator
                                 size="Small"
-                                .active=${state.creatingTransferProposal}
+                                .active=${state.creatingThresholdProposal}
                             >
                                 <ui5-button
                                     design="Emphasized"
-                                    @click=${() => this.handleCreateTransferProposalClick()}
+                                    @click=${() => this.handleCreateThresholdProposalClick()}
                                 >
                                     Create
                                 </ui5-button>
     
-                                <ui5-button @click=${() => this.store.hideCreateTransferProposal = true}>Cancel</ui5-button>
+                                <ui5-button @click=${() => this.store.hideCreateThresholdProposal = true}>Cancel</ui5-button>
                             </ui5-busy-indicator>
                         </div>
                     </ui5-dialog>
                 ` : ''}
             </div>
-
 
             <ui5-toast id="toast-proposal-created" placement="TopCenter">Proposal Created</ui5-toast>
             <ui5-toast id="toast-vote-recorded" placement="TopCenter">Vote Recorded</ui5-toast>
