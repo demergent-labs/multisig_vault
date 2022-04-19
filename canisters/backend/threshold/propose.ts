@@ -11,7 +11,8 @@ import { sha224 } from 'hash.js';
 import { isSigner } from '../signers';
 import {
     DefaultMutator,
-    DefaultResult
+    DefaultResult,
+    State
 } from '../types';
 
 export function* proposeThreshold(
@@ -20,7 +21,11 @@ export function* proposeThreshold(
 ): UpdateAsync<DefaultResult> {
     const caller = ic.caller();
 
-    const checks_result = performChecks(caller);
+    const checks_result = performChecks(
+        caller,
+        threshold,
+        state.signers
+    );
 
     if (checks_result.ok === undefined) {
         return {
@@ -50,10 +55,26 @@ export function* proposeThreshold(
     return mutator_result;
 }
 
-function performChecks(caller: Principal): DefaultResult {
+function performChecks(
+    caller: Principal,
+    threshold: nat8,
+    signers: State['signers']
+): DefaultResult {
     if (isSigner(caller) === false) {
         return {
             err: 'Only signers can propose a threshold'
+        };
+    }
+
+    if (threshold === 0) {
+        return {
+            err: 'Threshold cannot be 0'
+        }
+    }
+
+    if (threshold > Object.keys(signers).length) {
+        return {
+            err: 'Threshold cannot be greater than number of signers'
         };
     }
 

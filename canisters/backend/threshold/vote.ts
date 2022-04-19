@@ -22,7 +22,8 @@ export function voteOnThresholdProposal(
     const checks_result = performChecks(
         caller,
         thresholdProposalId,
-        state.thresholdProposals
+        state.thresholdProposals,
+        state.signers
     );
 
     if (checks_result.ok === undefined) {
@@ -48,7 +49,8 @@ export function voteOnThresholdProposal(
 function performChecks(
     caller: Principal,
     thresholdProposalId: string,
-    thresholdProposals: State['thresholdProposals']
+    thresholdProposals: State['thresholdProposals'],
+    signers: State['signers']
 ): VoteOnThresholdProposalChecksResult {
     const thresholdProposal = thresholdProposals[thresholdProposalId];
 
@@ -75,6 +77,18 @@ function performChecks(
     if (alreadyVoted === true) {
         return {
             err: `You have already voted on this proposal`
+        };
+    }
+
+    if (thresholdProposal.threshold === 0) {
+        return {
+            err: 'Threshold cannot be 0'
+        }
+    }
+
+    if (thresholdProposal.threshold > Object.keys(signers).length) {
+        return {
+            err: 'Threshold cannot be greater than number of signers'
         };
     }
 

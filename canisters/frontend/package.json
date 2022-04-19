@@ -5,6 +5,7 @@
     "dependencies": {
         "@dfinity/agent": "0.11.0",
         "@dfinity/auth-client": "0.11.0",
+        "@ui5/webcomponents": "1.2.4",
         "lit-html": "2.2.2",
         "reduxular": "0.0.6"
     },
