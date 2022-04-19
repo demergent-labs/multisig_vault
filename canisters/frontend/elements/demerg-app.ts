@@ -30,6 +30,7 @@ import '@ui5/webcomponents/dist/Dialog.js';
 import '@ui5/webcomponents/dist/Input.js';
 import '@ui5/webcomponents/dist/BusyIndicator.js';
 import '@ui5/webcomponents/dist/Toast.js';
+import '@ui5/webcomponents/dist/Badge.js';
 
 type State = {
     canister_principal: {
@@ -63,8 +64,9 @@ type State = {
     hideOpenThresholdProposals: boolean;
     hideOpenTransferProposals: boolean;
     creatingThresholdProposal: boolean;
-    votingOnThresholdProposals: {
-        [thresholdProposalId: string]: {
+    creatingSignerProposal: boolean;
+    votingOnProposals: {
+        [proposalId: string]: {
             adopting: boolean;
             rejecting: boolean;
         }
@@ -103,7 +105,8 @@ const InitialState: State = {
     hideOpenThresholdProposals: false,
     hideOpenTransferProposals: false,
     creatingThresholdProposal: false,
-    votingOnThresholdProposals: {}
+    creatingSignerProposal: false,
+    votingOnProposals: {}
 };
 
 class DemergApp extends HTMLElement {
@@ -202,12 +205,12 @@ class DemergApp extends HTMLElement {
 
         try {
 
-            const description = this.shadow.getElementById('description')?.value;
-            const threshold = this.shadow.getElementById('threshold')?.value;
+            const description = (this.shadow.getElementById('input-threshold-proposal-description') as any).value;
+            const threshold = (this.shadow.getElementById('input-threshold-proposal-threshold') as any).value;
 
             await this.createThresholdProposal(description, parseInt(threshold));
 
-            this.shadow.getElementById('toast-proposal-created')?.show();
+            (this.shadow.getElementById('toast-proposal-created') as any).show();
         }
         catch(error) {
             console.error(error);
@@ -239,7 +242,7 @@ class DemergApp extends HTMLElement {
     }
 
     async handleVoteOnThresholdProposalClick(thresholdProposalId: string, adopt: boolean) {
-        this.store.votingOnThresholdProposals = {
+        this.store.votingOnProposals = {
             [thresholdProposalId]: {
                 adopting: adopt === true,
                 rejecting: adopt === false
@@ -250,7 +253,7 @@ class DemergApp extends HTMLElement {
             // TODO we need to return the error and display it...maybe a toast would be good for that?
             await this.voteOnThresholdProposal(thresholdProposalId, adopt);
 
-            this.shadow.getElementById('toast-vote-recorded')?.show();
+            (this.shadow.getElementById('toast-vote-recorded') as any).show();
         }
         catch(error) {
             console.error(error);
@@ -258,7 +261,7 @@ class DemergApp extends HTMLElement {
         }
 
         // TODO this is technically a memory leak, but probably won't be an issue
-        this.store.votingOnThresholdProposals = {
+        this.store.votingOnProposals = {
             [thresholdProposalId]: {
                 adopting: false,
                 rejecting: false
@@ -278,6 +281,97 @@ class DemergApp extends HTMLElement {
         );
 
         const result = await backend.voteOnThresholdProposal(thresholdProposalId, adopt);
+
+        if (result.hasOwnProperty('ok')) {
+            await this.loadData();
+        }
+        else {
+            console.error((result as any).err);
+            alert((result as any).err);
+        }
+    }
+
+    async handleCreateSignerProposalClick() {
+        this.store.creatingSignerProposal = true;
+
+        try {
+
+            const description = (this.shadow.getElementById('input-signer-proposal-description') as any).value;
+            const signer = (this.shadow.getElementById('input-signer-proposal-signer') as any).value;
+
+            await this.createSignerProposal(description, signer);
+
+            (this.shadow.getElementById('toast-proposal-created') as any).show();
+        }
+        catch(error) {
+            console.error(error);
+            alert('There was an error');
+        }
+        
+        this.store.hideCreateSignerProposal = true;
+        this.store.creatingSignerProposal = false;
+    }
+
+    async createSignerProposal(description: string, signer: string) {
+        const backend = createActor(
+            window.process.env.BACKEND_CANISTER_ID as any,
+            {
+                agentOptions: {
+                    identity: this.store.identity as any
+                }
+            }
+        );
+
+        const result = await backend.proposeSigner(description, Principal.fromText(signer));
+
+        if (result.hasOwnProperty('ok')) {
+            await this.loadData();
+        }
+        else {
+            alert((result as any).err);
+        }
+    }
+
+    async handleVoteOnSignerProposalClick(signerProposalId: string, adopt: boolean) {
+        this.store.votingOnProposals = {
+            [signerProposalId]: {
+                adopting: adopt === true,
+                rejecting: adopt === false
+            }
+        };
+
+        try {
+            // TODO we need to return the error and display it...maybe a toast would be good for that?
+            await this.voteOnSignerProposal(signerProposalId, adopt);
+
+            (this.shadow.getElementById('toast-vote-recorded') as any).show();
+        }
+        catch(error) {
+            console.error(error);
+            alert('There was an error');
+        }
+
+        // TODO this is technically a memory leak, but probably won't be an issue
+        this.store.votingOnProposals = {
+            [signerProposalId]: {
+                adopting: false,
+                rejecting: false
+            }
+        };
+    }
+
+    async voteOnSignerProposal(signerProposalId: string, adopt: boolean) {
+        // TODO store the authenticated actor in the state
+        const backend = createActor(
+            window.process.env.BACKEND_CANISTER_ID as any,
+            {
+                agentOptions: {
+                    identity: this.store.identity as any
+                }
+            }
+        );
+
+        const result = await backend.voteOnSignerProposal(signerProposalId, adopt);
 
         if (result.hasOwnProperty('ok')) {
             await this.loadData();
@@ -374,8 +468,8 @@ class DemergApp extends HTMLElement {
                         const votesAgainst = thresholdProposal.votes.filter((vote) => vote.adopt === false).length;
 
                         const status = thresholdProposal.adopted === true ?
-                            `Adopted ${new Date(Number(thresholdProposal.adopted_at[0] / 1000000n)).toLocaleString()}` : thresholdProposal.rejected === true ?
-                                `Rejected ${new Date(Number(thresholdProposal.rejected_at[0] / 1000000n)).toLocaleString()}` : 'Open';
+                            `Adopted ${new Date(Number(thresholdProposal.adopted_at[0] ?? 0n / 1000000n)).toLocaleString()}` : thresholdProposal.rejected === true ?
+                                `Rejected ${new Date(Number(thresholdProposal.rejected_at[0] ?? 0n / 1000000n)).toLocaleString()}` : 'Open';
 
                         return html`
                             <ui5-table-row>
@@ -415,7 +509,7 @@ class DemergApp extends HTMLElement {
                                     <ui5-table-cell>
                                         <ui5-busy-indicator
                                             size="Small"
-                                            .active=${state.votingOnThresholdProposals[thresholdProposal.id]?.adopting}
+                                            .active=${state.votingOnProposals[thresholdProposal.id]?.adopting}
                                         >
                                             <ui5-button
                                                 design="Positive"
@@ -429,7 +523,7 @@ class DemergApp extends HTMLElement {
                                     <ui5-table-cell>
                                         <ui5-busy-indicator
                                             size="Small"
-                                            .active=${state.votingOnThresholdProposals[thresholdProposal.id]?.rejecting}
+                                            .active=${state.votingOnProposals[thresholdProposal.id]?.rejecting}
                                         >
                                             <ui5-button
                                                 design="Negative"
@@ -453,13 +547,13 @@ class DemergApp extends HTMLElement {
                 >
                     <section class="login-form">
                         <div>
-                            <ui5-label for="description" required>Description:</ui5-label>
-                            <ui5-input id="description"></ui5-input>
+                            <ui5-label for="input-threshold-proposal-description" required>Description:</ui5-label>
+                            <ui5-input id="input-threshold-proposal-description"></ui5-input>
                         </div>
 
                         <div>
-                            <ui5-label for="threshold" required>Threshold:</ui5-label>
-                            <ui5-input id="threshold" type="Number"></ui5-input>
+                            <ui5-label for="input-threshold-proposal-threshold" required>Threshold:</ui5-label>
+                            <ui5-input id="input-threshold-proposal-threshold" type="Number"></ui5-input>
                         </div>
                     </section>
 
@@ -482,6 +576,199 @@ class DemergApp extends HTMLElement {
                 </ui5-dialog>
             ` : ''}
 
+            <ui5-card>
+                <ui5-card-header title-text="Signers">
+                    <div slot="action">
+                        <ui5-button
+                            design="Emphasized"
+                            @click=${() => this.store.hideCreateSignerProposal = false}
+                        >
+                            Create Proposal
+                        </ui5-button>
+                        <ui5-button
+                            ?hidden=${!state.hideOpenSignerProposals}
+                            @click=${() => this.store.hideOpenSignerProposals = false}
+                        >
+                            View Open Proposals
+                        </ui5-button>
+                        <ui5-button
+                            ?hidden=${state.hideOpenSignerProposals}
+                            @click=${() => this.store.hideOpenSignerProposals = true}
+                        >
+                            View Closed Proposals
+                        </ui5-button>
+                    </div>
+                </ui5-card-header>
+
+                <div style="padding-bottom: .5rem; padding-left: .5rem">
+                    ${state.signers.value.map((signer, index) => {
+                        return html`
+                            <div style="padding-bottom: .5rem">
+                                <ui5-badge style="padding: .5rem; font-size: 1.25rem" color-scheme="${(index % 10) + 1}">${signer.toString()}</ui5-badge>
+                            </div>
+                        `;
+                    })}
+                </div>
+
+                <ui5-table no-data-text="No ${state.hideOpenSignerProposals === true ? 'closed' : 'open'} proposals">
+                    <ui5-table-column slot="columns">
+                        <ui5-label>ID</ui5-label>
+                    </ui5-table-column>
+
+                    <ui5-table-column slot="columns">
+                        <ui5-label>Created At</ui5-label>
+                    </ui5-table-column>
+
+                    <ui5-table-column slot="columns">
+                        <ui5-label>Proposer</ui5-label>
+                    </ui5-table-column>
+
+                    <ui5-table-column slot="columns">
+                        <ui5-label>Description</ui5-label>
+                    </ui5-table-column>
+
+                    <ui5-table-column slot="columns">
+                        <ui5-label>Signer</ui5-label>
+                    </ui5-table-column>
+
+                    <ui5-table-column slot="columns">
+                        <ui5-label>Votes For</ui5-label>
+                    </ui5-table-column>
+
+                    <ui5-table-column slot="columns">
+                        <ui5-label>Votes Against</ui5-label>
+                    </ui5-table-column>
+
+                    <ui5-table-column slot="columns">
+                        <ui5-label>Status</ui5-label>
+                    </ui5-table-column>
+
+                    ${state.hideOpenSignerProposals === false ? html`
+                        <ui5-table-column slot="columns"></ui5-table-column>
+                        <ui5-table-column slot="columns"></ui5-table-column>
+                    ` : ''}
+
+                    ${state.signerProposals.filter((signerProposal) => {
+                        const open = signerProposal.adopted === false && signerProposal.rejected === false;
+                        const hidden = (open && state.hideOpenSignerProposals === true) || (!open && state.hideOpenSignerProposals === false);
+
+                        return hidden === false;
+                    }).map((signerProposal) => {
+                        const idTrimmed = `${signerProposal.id.slice(0, 5)}...${signerProposal.id.slice(signerProposal.id.length - 5, signerProposal.id.length)}`;
+                        const proposerTrimmed = `${signerProposal.proposer.toString().slice(0, 5)}...${signerProposal.proposer.toString().slice(signerProposal.proposer.toString().length - 5, signerProposal.proposer.toString().length)}`;
+
+                        const votesFor = signerProposal.votes.filter((vote) => vote.adopt === true).length;
+                        const votesAgainst = signerProposal.votes.filter((vote) => vote.adopt === false).length;
+
+                        const status = signerProposal.adopted === true ?
+                            `Adopted ${new Date(Number(signerProposal.adopted_at[0] ?? 0n / 1000000n)).toLocaleString()}` : signerProposal.rejected === true ?
+                                `Rejected ${new Date(Number(signerProposal.rejected_at[0] ?? 0n / 1000000n)).toLocaleString()}` : 'Open';
+
+                        return html`
+                            <ui5-table-row>
+                                <ui5-table-cell>
+                                    <ui5-label title="${signerProposal.id}">${idTrimmed}</ui5-label>
+                                </ui5-table-cell>
+
+                                <ui5-table-cell>
+                                    <ui5-label>${new Date(Number(signerProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
+                                </ui5-table-cell>
+
+                                <ui5-table-cell>
+                                    <ui5-label title="${signerProposal.proposer}">${proposerTrimmed}</ui5-label>
+                                </ui5-table-cell>
+
+                                <ui5-table-cell>
+                                    <ui5-label>${signerProposal.description}</ui5-label>
+                                </ui5-table-cell>
+
+                                <ui5-table-cell>
+                                    <ui5-label>${signerProposal.signer}</ui5-label>
+                                </ui5-table-cell>
+
+                                <ui5-table-cell>
+                                    <ui5-label>${votesFor}</ui5-label>
+                                </ui5-table-cell>
+
+                                <ui5-table-cell>
+                                    <ui5-label>${votesAgainst}</ui5-label>
+                                </ui5-table-cell>
+
+                                <ui5-table-cell>
+                                    <ui5-label>${status}</ui5-label>
+                                </ui5-table-cell>
+
+                                ${state.hideOpenSignerProposals === false ? html`
+                                    <ui5-table-cell>
+                                        <ui5-busy-indicator
+                                            size="Small"
+                                            .active=${state.votingOnProposals[signerProposal.id]?.adopting}
+                                        >
+                                            <ui5-button
+                                                design="Positive"
+                                                @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, true)}
+                                            >
+                                                Adopt
+                                            </ui5-button>
+                                        </ui5-busy-indicator>
+                                    </ui5-table-cell>
+
+                                    <ui5-table-cell>
+                                        <ui5-busy-indicator
+                                            size="Small"
+                                            .active=${state.votingOnProposals[signerProposal.id]?.rejecting}
+                                        >
+                                            <ui5-button
+                                                design="Negative"
+                                                @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, false)}
+                                            >
+                                                Reject
+                                            </ui5-button>
+                                        </ui5-busy-indicator>
+                                    </ui5-table-cell>
+                                ` : ''}
+                            </ui5-table-row>
+                        `;
+                    })}
+                </ui5-table>
+            </ui5-card>
+
+            ${state.hideCreateSignerProposal === false ? html`
+                <ui5-dialog
+                    header-text="Signer Proposal"
+                    .open=${true}
+                >
+                    <section class="login-form">
+                        <div>
+                            <ui5-label for="input-signer-proposal-description" required>Description:</ui5-label>
+                            <ui5-input id="input-signer-proposal-description"></ui5-input>
+                        </div>
+
+                        <div>
+                            <ui5-label for="input-signer-proposal-signer" required>Signer:</ui5-label>
+                            <ui5-input id="input-signer-proposal-signer"></ui5-input>
+                        </div>
+                    </section>
+
+                    <div slot="footer" class="dialog-footer">
+                        <div style="flex: 1"></div>
+                        <ui5-busy-indicator
+                            size="Small"
+                            .active=${state.creatingSignerProposal}
+                        >
+                            <ui5-button
+                                design="Emphasized"
+                                @click=${() => this.handleCreateSignerProposalClick()}
+                            >
+                                Create
+                            </ui5-button>
+
+                            <ui5-button @click=${() => this.store.hideCreateSignerProposal = true}>Cancel</ui5-button>
+                        </ui5-busy-indicator>
+                    </div>
+                </ui5-dialog>
+            ` : ''}
+
             <ui5-toast id="toast-proposal-created" placement="TopCenter">Proposal Created</ui5-toast>
             <ui5-toast id="toast-vote-recorded" placement="TopCenter">Vote Recorded</ui5-toast>
 
@@ -498,156 +785,6 @@ class DemergApp extends HTMLElement {
             <br>
 
             <div>Canister address: ${state.canister_address.loading === true ? 'Loading...' : state.canister_address.value}</div>
-
-            <br>
-
-            <div>Signers</div>
-
-            <br>
-
-            <div>
-                ${state.signers.loading === true ? 'Loading...' : state.signers.value.map((signer) => {
-                    return html`<div>${signer.toString()}</div>`;
-                })}
-            </div>
-
-            <br>
-
-            <div>Signer Proposals</div>
-
-            <br>
-
-            <div>
-                <button @click=${() => this.store.hideOpenSignerProposals = false}>
-                    Open Proposals
-                </button>
-                <button @click=${() => this.store.hideOpenSignerProposals = true}>
-                    Closed Proposals
-                </button>
-            </div>
-
-            <br>
-
-            <div>
-                <button @click=${() => this.store.hideCreateSignerProposal = !this.store.hideCreateSignerProposal}>
-                    Create Signer Proposal
-                </button>
-            </div>
-
-            <br>
-            
-            <div>
-                <demerg-proposal
-                    ?hidden=${state.hideCreateSignerProposal}
-                    .mode=${'CREATE'}
-                    .proposalType=${'Signer'}
-                    .proposalValueInputId=${'signer-input'}
-                    .proposalValueInputTemplate=${html`Signer: <input id="signer-input" type="text">`}
-                    .proposalValueInputRetriever=${(element: DemergProposal) => {
-                        const signer = (element.shadow.getElementById('signer-input') as HTMLInputElement | null)?.value;
-
-                        return signer;
-                    }}
-                    .canisterMethodCreate=${async (description: string, signer: string) => {
-                        const backend = createActor(
-                            window.process.env.BACKEND_CANISTER_ID as any,
-                            {
-                                agentOptions: {
-                                    identity: this.store.identity as any
-                                }
-                            }
-                        );
-    
-                        // TODO we might need a way to allow the developer to pass in a function that extracts the value from the input
-                        const result = await backend.proposeSigner(description, Principal.fromText(signer));
-    
-                        if (result.hasOwnProperty('ok')) {
-                            this.store.hideCreateSignerProposal = true;
-                            this.loadData();
-                        }
-                        else {
-                            alert((result as any).err);
-                        }
-                    }}
-                ></demerg-proposal>
-            </div>
-
-            <br>
-
-            <div>
-                ${state.signerProposals.map((signerProposal) => {
-                    const open = signerProposal.adopted === false && signerProposal.rejected === false;
-                    const hidden = (open && state.hideOpenSignerProposals === true) || (!open && state.hideOpenSignerProposals === false);
-                    
-                    return html`
-                        <div
-                            ?hidden=${hidden}
-                            class="proposal-container"
-                        >
-                            <demerg-proposal
-                                .mode=${'READ'}
-                                .proposalType=${'Signer'}
-                                .created_at=${signerProposal.created_at}
-                                .adopted_at=${signerProposal.adopted_at.length === 0 ? 0n : signerProposal.adopted_at[0]}
-                                .rejected_at=${signerProposal.rejected_at.length === 0 ? 0n : signerProposal.rejected_at[0]}
-                                .proposer=${signerProposal.proposer}
-                                .description=${signerProposal.description}
-                                .votes=${signerProposal.votes}
-                                .adopted=${signerProposal.adopted}
-                                .rejected=${signerProposal.rejected}
-                                .proposalId=${signerProposal.id}
-                                .proposalValueTemplate=${html`<div>New Signer: ${signerProposal.signer}</div>`}
-                                .canisterMethodAdopt=${async () => {
-                                    const backend = createActor(
-                                        window.process.env.BACKEND_CANISTER_ID as any,
-                                        {
-                                            agentOptions: {
-                                                identity: this.store.identity as any
-                                            }
-                                        }
-                                    );
-
-                                    const result = await backend.voteOnSignerProposal(signerProposal.id, true);
-
-                                    console.log('canisterMethodAdopt result', result);
-
-                                    if (result.hasOwnProperty('ok')) {
-                                        this.loadData();
-                                    }
-                                    else {
-                                        alert((result as any).err);
-                                    }
-                                }}
-                                .canisterMethodReject=${async () => {
-                                    const backend = createActor(
-                                        window.process.env.BACKEND_CANISTER_ID as any,
-                                        {
-                                            agentOptions: {
-                                                identity: this.store.identity as any
-                                            }
-                                        }
-                                    );
-
-                                    const result = await backend.voteOnSignerProposal(signerProposal.id, false);
-
-                                    console.log('canisterMethodReject result', result);
-
-                                    if (result.hasOwnProperty('ok')) {
-                                        this.loadData();
-                                    }
-                                    else {
-                                        alert((result as any).err);
-                                    }
-                                }}
-                            ></demerg-proposal>
-                        </div>
-
-                        <br>
-                    `;
-                })}
-            </div>
-
-            <br>
 
             <div>Transfer Proposals</div>
 
