@@ -17,7 +17,6 @@ import { Principal } from '@dfinity/principal';
 import { AuthClient } from '@dfinity/auth-client';
 import { Identity } from '@dfinity/agent';
 import './demerg-proposal';
-import { DemergProposal } from './demerg-proposal';
 import '@ui5/webcomponents/dist/Card.js';
 import '@ui5/webcomponents/dist/CardHeader.js';
 import '@ui5/webcomponents/dist/Button.js';
@@ -31,6 +30,8 @@ import '@ui5/webcomponents/dist/Input.js';
 import '@ui5/webcomponents/dist/BusyIndicator.js';
 import '@ui5/webcomponents/dist/Toast.js';
 import '@ui5/webcomponents/dist/Badge.js';
+import '@ui5/webcomponents/dist/Link.js';
+import "@ui5/webcomponents-fiori/dist/Bar.js";
 
 type State = {
     canister_principal: {
@@ -493,6 +494,24 @@ class DemergApp extends HTMLElement {
                     padding: .5rem;
                 }
             </style>
+
+            <ui5-bar design="Header">
+                <ui5-link
+                    slot="startContent"
+                    href="/"
+                    design="Emphasized"
+                >
+                    Multisig Vault
+                </ui5-link>
+                <ui5-label>My Principal: ${state.identity === null ? 'Loading...' : state.identity.getPrincipal().toString()}</ui5-label>
+                <ui5-link
+                    slot="endContent"
+                    href="https://github.com/demergent-labs/multisig_vault"
+                    target="_blank"
+                >
+                    Open Source
+                </ui5-link>
+            </ui5-bar>
 
             <ui5-card>
                 <ui5-card-header title-text="Threshold" subtitle-text="${thresholdSubtitleText}">
@@ -1068,8 +1087,6 @@ class DemergApp extends HTMLElement {
 
             <ui5-toast id="toast-proposal-created" placement="TopCenter">Proposal Created</ui5-toast>
             <ui5-toast id="toast-vote-recorded" placement="TopCenter">Vote Recorded</ui5-toast>
-
-            <div>My principal: ${state.identity === null ? 'Loading...' : state.identity.getPrincipal().toString()}</div>
         `;
     }
 }
