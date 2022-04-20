@@ -8,10 +8,12 @@ import {
     nat8
 } from 'azle';
 import { createActor } from '../dfx_generated/backend';
+import { ActorSubclass } from '@dfinity/agent';
 import {
     ThresholdProposal,
     SignerProposal,
-    TransferProposal
+    TransferProposal,
+    _SERVICE
 } from '../dfx_generated/backend/backend.did';
 import { Principal } from '@dfinity/principal';
 import { AuthClient } from '@dfinity/auth-client';
@@ -36,7 +38,11 @@ import "@ui5/webcomponents-fiori/dist/Bar.js";
 // TODO use ui5-step-input instead of number input, set min and max, set initial value to the current threshold
 // TODO allow adding or removing a signer, probably use a toggle to say if you are adding or removing the signer
 
+// TODO split up into components
+// TODO fully generalize proposal components
+
 type State = {
+    backend: ActorSubclass<_SERVICE> | null;
     canister_principal: {
         loading: boolean;
         value: string;
@@ -77,9 +83,16 @@ type State = {
             rejecting: boolean;
         }
     };
+    errorMessage: string;
+    showErrorDialog: boolean;
+    loadingTransferProposals: boolean;
+    loadingSignerProposals: boolean;
+    loadingSigners: boolean;
+    loadingThresholdProposals: boolean;
 };
 
 const InitialState: State = {
+    backend: null,
     canister_principal: {
         loading: true,
         value: ''
@@ -114,7 +127,13 @@ const InitialState: State = {
     creatingThresholdProposal: false,
     creatingSignerProposal: false,
     creatingTransferProposal: false,
-    votingOnProposals: {}
+    votingOnProposals: {},
+    errorMessage: '',
+    showErrorDialog: false,
+    loadingTransferProposals: false,
+    loadingSignerProposals: false,
+    loadingSigners: false,
+    loadingThresholdProposals: false
 };
 
 class DemergApp extends HTMLElement {
@@ -145,10 +164,7 @@ class DemergApp extends HTMLElement {
 
             this.store.identity = authClient.getIdentity();
         }
-    }
 
-    // TODO it would still be nice if we could await this
-    async loadData() {
         const backend = createActor(
             window.process.env.BACKEND_CANISTER_ID as any,
             {
@@ -158,98 +174,146 @@ class DemergApp extends HTMLElement {
             }
         );
 
-        backend.getVaultBalance().then((balance) => {
-            if ('ok' in balance) {
-                this.store.balance = {
+        this.store.backend = backend;
+    }
+
+    async loadData() {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
+
+            return;
+        }
+
+        await Promise.all([
+            this.store.backend.getVaultBalance().then((balance) => {
+                if ('ok' in balance) {
+                    this.store.balance = {
+                        loading: false,
+                        value: balance.ok
+                    };
+                }
+            }),
+            this.store.backend.getCanisterAddress().then((address) => {
+                this.store.canister_address = {
                     loading: false,
-                    value: balance.ok
+                    value: address
                 };
-            }
-        });
+            }),
+            this.store.backend.getCanisterPrincipal().then((principal) => {
+                this.store.canister_principal = {
+                    loading: false,
+                    value: principal
+                };
+            }),
+            this.store.backend.getThreshold().then((threshold) => {
+                this.store.threshold = {
+                    loading: false,
+                    value: threshold
+                }
+            }),
+            this.loadSigners(),
+            this.loadTransferProposals(),
+            this.loadSignerProposals(),
+            this.loadThresholdProposals()
+        ]);
+    }
 
-        backend.getCanisterAddress().then((address) => {
-            this.store.canister_address = {
-                loading: false,
-                value: address
-            };
-        });
+    async loadTransferProposals() {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
 
-        backend.getCanisterPrincipal().then((principal) => {
-            this.store.canister_principal = {
-                loading: false,
-                value: principal
-            };
-        });
+            return;
+        }
 
-        backend.getThreshold().then((threshold) => {
-            this.store.threshold = {
-                loading: false,
-                value: threshold
-            }
-        });
+        const transferProposals = await this.store.backend.getTransferProposals();
+        
+        this.store.transferProposals = transferProposals;
+    }
 
-        backend.getThresholdProposals().then((thresholdProposals) => {
-            this.store.thresholdProposals = thresholdProposals;
-        });
+    async loadSignerProposals() {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
 
-        backend.getSigners().then((signers) => {
-            this.store.signers = {
-                loading: false,
-                value: signers
-            };
-        });
+            return;
+        }
 
-        backend.getSignerProposals().then((signerProposals) => {
-            this.store.signerProposals = signerProposals;
-        });
+        const signerProposals = await this.store.backend.getSignerProposals();
+        
+        this.store.signerProposals = signerProposals;
+    }
 
-        backend.getTransferProposals().then((transferProposals) => {
-            this.store.transferProposals = transferProposals;
-        });
+    async loadSigners() {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
+
+            return;
+        }
+
+        const signers = await this.store.backend.getSigners();
+
+        this.store.signers = {
+            loading: false,
+            value: signers
+        };
+    }
+
+    async loadThresholdProposals() {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
+
+            return;
+        }
+
+        const thresholdProposals = await this.store.backend.getThresholdProposals();
+        
+        this.store.thresholdProposals = thresholdProposals;
     }
 
     async handleCreateThresholdProposalClick() {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
+
+            return;
+        }
+
         this.store.creatingThresholdProposal = true;
 
         try {
-
             const description = (this.shadow.getElementById('input-threshold-proposal-description') as any).value;
             const threshold = (this.shadow.getElementById('input-threshold-proposal-threshold') as any).value;
 
-            await this.createThresholdProposal(description, parseInt(threshold));
+            const result = await this.store.backend.proposeThreshold(description, threshold);
 
-            (this.shadow.getElementById('toast-proposal-created') as any).show();
+            if (result.hasOwnProperty('ok')) {
+                this.loadData();
+                (this.shadow.getElementById('toast-proposal-created') as any).show();
+            }
+            else {
+                this.handleError((result as any).err);
+            }
         }
         catch(error) {
-            console.error(error);
-            alert('There was an error');
+            this.handleError(error);
         }
         
         this.store.hideCreateThresholdProposal = true;
         this.store.creatingThresholdProposal = false;
     }
 
-    async createThresholdProposal(description: string, threshold: number) {
-        const backend = createActor(
-            window.process.env.BACKEND_CANISTER_ID as any,
-            {
-                agentOptions: {
-                    identity: this.store.identity as any
-                }
-            }
-        );
-
-        const result = await backend.proposeThreshold(description, threshold);
-
-        if (result.hasOwnProperty('ok')) {
-            await this.loadData();
-        }
-        else {
-            alert((result as any).err);
-        }
-    }
-
     async handleVoteOnThresholdProposalClick(thresholdProposalId: string, adopt: boolean) {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
+
+            return;
+        }
+
         this.store.votingOnProposals = {
             [thresholdProposalId]: {
                 adopting: adopt === true,
@@ -258,14 +322,18 @@ class DemergApp extends HTMLElement {
         };
 
         try {
-            // TODO we need to return the error and display it...maybe a toast would be good for that?
-            await this.voteOnThresholdProposal(thresholdProposalId, adopt);
+            const result = await this.store.backend.voteOnThresholdProposal(thresholdProposalId, adopt);
 
-            (this.shadow.getElementById('toast-vote-recorded') as any).show();
+            if (result.hasOwnProperty('ok')) {
+                this.loadData();
+                (this.shadow.getElementById('toast-vote-recorded') as any).show();
+            }
+            else {
+                this.handleError((result as any).err);
+            }
         }
         catch(error) {
-            console.error(error);
-            alert('There was an error');
+            this.handleError(error);
         }
 
         // TODO this is technically a memory leak, but probably won't be an issue
@@ -277,29 +345,14 @@ class DemergApp extends HTMLElement {
         };
     }
 
-    async voteOnThresholdProposal(thresholdProposalId: string, adopt: boolean) {
-        // TODO store the authenticated actor in the state
-        const backend = createActor(
-            window.process.env.BACKEND_CANISTER_ID as any,
-            {
-                agentOptions: {
-                    identity: this.store.identity as any
-                }
-            }
-        );
-
-        const result = await backend.voteOnThresholdProposal(thresholdProposalId, adopt);
-
-        if (result.hasOwnProperty('ok')) {
-            await this.loadData();
-        }
-        else {
-            console.error((result as any).err);
-            alert((result as any).err);
-        }
-    }
-
     async handleCreateSignerProposalClick() {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
+
+            return;
+        }
+
         this.store.creatingSignerProposal = true;
 
         try {
@@ -307,40 +360,32 @@ class DemergApp extends HTMLElement {
             const description = (this.shadow.getElementById('input-signer-proposal-description') as any).value;
             const signer = (this.shadow.getElementById('input-signer-proposal-signer') as any).value;
 
-            await this.createSignerProposal(description, signer);
+            const result = await this.store.backend.proposeSigner(description, Principal.fromText(signer));
 
-            (this.shadow.getElementById('toast-proposal-created') as any).show();
+            if (result.hasOwnProperty('ok')) {
+                this.loadData();
+                (this.shadow.getElementById('toast-proposal-created') as any).show();
+            }
+            else {
+                this.handleError((result as any).err);
+            }
         }
         catch(error) {
-            console.error(error);
-            alert('There was an error');
+            this.handleError(error);
         }
         
         this.store.hideCreateSignerProposal = true;
         this.store.creatingSignerProposal = false;
     }
 
-    async createSignerProposal(description: string, signer: string) {
-        const backend = createActor(
-            window.process.env.BACKEND_CANISTER_ID as any,
-            {
-                agentOptions: {
-                    identity: this.store.identity as any
-                }
-            }
-        );
-
-        const result = await backend.proposeSigner(description, Principal.fromText(signer));
-
-        if (result.hasOwnProperty('ok')) {
-            await this.loadData();
-        }
-        else {
-            alert((result as any).err);
-        }
-    }
-
     async handleVoteOnSignerProposalClick(signerProposalId: string, adopt: boolean) {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
+
+            return;
+        }
+
         this.store.votingOnProposals = {
             [signerProposalId]: {
                 adopting: adopt === true,
@@ -349,17 +394,23 @@ class DemergApp extends HTMLElement {
         };
 
         try {
-            // TODO we need to return the error and display it...maybe a toast would be good for that?
-            await this.voteOnSignerProposal(signerProposalId, adopt);
+            const result = await this.store.backend.voteOnSignerProposal(signerProposalId, adopt);
 
-            (this.shadow.getElementById('toast-vote-recorded') as any).show();
+            if (result.hasOwnProperty('ok')) {
+                this.loadData();
+                (this.shadow.getElementById('toast-vote-recorded') as any).show();
+            }
+            else {
+                this.handleError((result as any).err);
+            }
+
         }
         catch(error) {
-            console.error(error);
-            alert('There was an error');
+            this.handleError(error);
         }
 
         // TODO this is technically a memory leak, but probably won't be an issue
+        // TODO we could also just delete the property and do a manually dispatch
         this.store.votingOnProposals = {
             [signerProposalId]: {
                 adopting: false,
@@ -368,29 +419,14 @@ class DemergApp extends HTMLElement {
         };
     }
 
-    async voteOnSignerProposal(signerProposalId: string, adopt: boolean) {
-        // TODO store the authenticated actor in the state
-        const backend = createActor(
-            window.process.env.BACKEND_CANISTER_ID as any,
-            {
-                agentOptions: {
-                    identity: this.store.identity as any
-                }
-            }
-        );
-
-        const result = await backend.voteOnSignerProposal(signerProposalId, adopt);
-
-        if (result.hasOwnProperty('ok')) {
-            await this.loadData();
-        }
-        else {
-            console.error((result as any).err);
-            alert((result as any).err);
-        }
-    }
-
     async handleCreateTransferProposalClick() {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
+
+            return;
+        }
+
         this.store.creatingTransferProposal = true;
 
         try {
@@ -400,40 +436,32 @@ class DemergApp extends HTMLElement {
             const decimals = amountString?.split('.')[1]?.length ?? 0;
             const amount = BigInt(Number(amountString ?? 0) * 10**decimals) * BigInt(10**(8 - decimals));
 
-            await this.createTransferProposal(description, destinationAddress, amount);
+            const result = await this.store.backend.proposeTransfer(description, destinationAddress, amount);
 
-            (this.shadow.getElementById('toast-proposal-created') as any).show();
+            if (result.hasOwnProperty('ok')) {
+                this.loadData();
+                (this.shadow.getElementById('toast-proposal-created') as any).show();
+            }
+            else {
+                this.handleError((result as any).err);
+            }
         }
         catch(error) {
-            console.error(error);
-            alert('There was an error');
+            this.handleError(error);
         }
         
         this.store.hideCreateTransferProposal = true;
         this.store.creatingTransferProposal = false;
     }
 
-    async createTransferProposal(description: string, destinationAddress: string, amount: nat64) {
-        const backend = createActor(
-            window.process.env.BACKEND_CANISTER_ID as any,
-            {
-                agentOptions: {
-                    identity: this.store.identity as any
-                }
-            }
-        );
-
-        const result = await backend.proposeTransfer(description, destinationAddress, amount);
-
-        if (result.hasOwnProperty('ok')) {
-            await this.loadData();
-        }
-        else {
-            alert((result as any).err);
-        }
-    }
-
     async handleVoteOnTransferProposalClick(transferProposalId: string, adopt: boolean) {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
+
+            return;
+        }
+
         this.store.votingOnProposals = {
             [transferProposalId]: {
                 adopting: adopt === true,
@@ -442,14 +470,18 @@ class DemergApp extends HTMLElement {
         };
 
         try {
-            // TODO we need to return the error and display it...maybe a toast would be good for that?
-            await this.voteOnTransferProposal(transferProposalId, adopt);
+            const result = await this.store.backend.voteOnTransferProposal(transferProposalId, adopt);
 
-            (this.shadow.getElementById('toast-vote-recorded') as any).show();
+            if (result.hasOwnProperty('ok')) {
+                this.loadData();
+                (this.shadow.getElementById('toast-vote-recorded') as any).show();
+            }
+            else {
+                this.handleError((result as any).err);
+            }
         }
         catch(error) {
-            console.error(error);
-            alert('There was an error');
+            this.handleError(error);
         }
 
         // TODO this is technically a memory leak, but probably won't be an issue
@@ -461,26 +493,20 @@ class DemergApp extends HTMLElement {
         };
     }
 
-    async voteOnTransferProposal(transferProposalId: string, adopt: boolean) {
-        // TODO store the authenticated actor in the state
-        const backend = createActor(
-            window.process.env.BACKEND_CANISTER_ID as any,
-            {
-                agentOptions: {
-                    identity: this.store.identity as any
-                }
-            }
-        );
+    handleError(error: any) {
+        console.error(error);
 
-        const result = await backend.voteOnTransferProposal(transferProposalId, adopt);
-
-        if (result.hasOwnProperty('ok')) {
-            await this.loadData();
+        if (error.message !== undefined) {
+            this.store.errorMessage = 'There was an error. See the console for more information.';
+        }
+        else if (error.startsWith('Rejection code')) {
+            this.store.errorMessage = 'There was an error. See the console for more information.';
         }
         else {
-            console.error((result as any).err);
-            alert((result as any).err);
+            this.store.errorMessage = error;
         }
+
+        this.store.showErrorDialog = true;
     }
 
     render(state: State) {
@@ -500,11 +526,11 @@ class DemergApp extends HTMLElement {
                     align-items: center;
                     width: 100%;
                     height: 100%;
-                    padding: 1rem;
+                    padding-top: 1rem;
                 }
 
                 .proposals-container {
-                    width: 50%;
+                    width: 75%;
                     padding-bottom: 1rem;
                 }
 
@@ -539,6 +565,18 @@ class DemergApp extends HTMLElement {
                 .dialog-footer-space {
                     flex: 1;
                 }
+
+                .card-header-action-container {
+                    display: flex;
+                }
+
+                .create-proposal-button {
+                    margin-right: .25rem;
+                }
+
+                .view-signers-button {
+                    margin-right: .25rem;
+                }
             </style>
 
             <ui5-bar design="Header">
@@ -562,25 +600,45 @@ class DemergApp extends HTMLElement {
             <div class="main-container">
                 <ui5-card class="proposals-container">
                     <ui5-card-header title-text="Transfers" subtitle-text="${transfersSubtitleText}">
-                        <div slot="action">
+                        <div class="card-header-action-container" slot="action">
                             <ui5-button
+                                class="create-proposal-button"
                                 design="Emphasized"
                                 @click=${() => this.store.hideCreateTransferProposal = false}
                             >
                                 Create Proposal
                             </ui5-button>
-                            <ui5-button
-                                ?hidden=${!state.hideOpenTransferProposals}
-                                @click=${() => this.store.hideOpenTransferProposals = false}
+
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${state.loadingTransferProposals}
                             >
-                                View Open Proposals
-                            </ui5-button>
-                            <ui5-button
-                                ?hidden=${state.hideOpenTransferProposals}
-                                @click=${() => this.store.hideOpenTransferProposals = true}
-                            >
-                                View Closed Proposals
-                            </ui5-button>
+                                <ui5-button
+                                    ?hidden=${!state.hideOpenTransferProposals}
+                                    @click=${async () => {
+                                        this.store.hideOpenTransferProposals = false;
+                                        
+                                        this.store.loadingTransferProposals = true;
+                                        await this.loadTransferProposals();
+                                        this.store.loadingTransferProposals = false;
+                                    }}
+                                >
+                                    View Open Proposals
+                                </ui5-button>
+
+                                <ui5-button
+                                    ?hidden=${state.hideOpenTransferProposals}
+                                    @click=${async () => {
+                                        this.store.hideOpenTransferProposals = true;
+
+                                        this.store.loadingTransferProposals = true;
+                                        await this.loadTransferProposals();
+                                        this.store.loadingTransferProposals = false;
+                                    }}
+                                >
+                                    View Closed Proposals
+                                </ui5-button>
+                            </ui5-busy-indicator>
                         </div>
                     </ui5-card-header>
     
@@ -762,40 +820,67 @@ class DemergApp extends HTMLElement {
     
                 <ui5-card class="proposals-container">
                     <ui5-card-header title-text="Signers">
-                        <div slot="action">
+                        <div class="card-header-action-container" slot="action">
                             <ui5-button
+                                class="create-proposal-button"
                                 design="Emphasized"
                                 @click=${() => this.store.hideCreateSignerProposal = false}
                             >
                                 Create Proposal
                             </ui5-button>
-                            <ui5-button
-                                design="Attention"
-                                @click=${() => {
-                                    this.store.hideSigners = false;
-                                    this.store.hideOpenSignerProposals = true;
-                                }}
+
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${state.loadingSigners}
                             >
-                                View Signers
-                            </ui5-button>
-                            <ui5-button
-                                ?hidden=${!state.hideOpenSignerProposals}
-                                @click=${() => {
-                                    this.store.hideSigners = true;
-                                    this.store.hideOpenSignerProposals = false;
-                                }}
+                                <ui5-button
+                                    class="view-signers-button"
+                                    design="Attention"
+                                    @click=${async () => {
+                                        this.store.hideSigners = false;
+                                        this.store.hideOpenSignerProposals = true;
+                                    
+                                        this.store.loadingSigners = true;
+                                        await this.loadSigners();
+                                        this.store.loadingSigners = false;
+                                    }}
+                                >
+                                    View Signers
+                                </ui5-button>
+                            </ui5-busy-indicator>
+
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${state.loadingSignerProposals}
                             >
-                                View Open Proposals
-                            </ui5-button>
-                            <ui5-button
-                                ?hidden=${state.hideOpenSignerProposals}
-                                @click=${() => {
-                                    this.store.hideSigners = true;
-                                    this.store.hideOpenSignerProposals = true;
-                                }}
-                            >
-                                View Closed Proposals
-                            </ui5-button>
+                                <ui5-button
+                                    ?hidden=${!state.hideOpenSignerProposals}
+                                    @click=${async () => {
+                                        this.store.hideSigners = true;
+                                        this.store.hideOpenSignerProposals = false;
+
+                                        this.store.loadingSignerProposals = true;
+                                        await this.loadSignerProposals();
+                                        this.store.loadingSignerProposals = false;
+                                    }}
+                                >
+                                    View Open Proposals
+                                </ui5-button>
+
+                                <ui5-button
+                                    ?hidden=${state.hideOpenSignerProposals}
+                                    @click=${async () => {
+                                        this.store.hideSigners = true;
+                                        this.store.hideOpenSignerProposals = true;
+
+                                        this.store.loadingSignerProposals = true;
+                                        await this.loadSignerProposals();
+                                        this.store.loadingSignerProposals = false;
+                                    }}
+                                >
+                                    View Closed Proposals
+                                </ui5-button>
+                            </ui5-busy-indicator>
                         </div>
                     </ui5-card-header>
     
@@ -985,25 +1070,47 @@ class DemergApp extends HTMLElement {
 
                 <ui5-card class="proposals-container">
                     <ui5-card-header title-text="Threshold" subtitle-text="${thresholdSubtitleText}">
-                        <div slot="action">
+                        <div class="card-header-action-container" slot="action">
                             <ui5-button
+                                class="create-proposal-button"
                                 design="Emphasized"
                                 @click=${() => this.store.hideCreateThresholdProposal = false}
                             >
                                 Create Proposal
                             </ui5-button>
-                            <ui5-button
-                                ?hidden=${!state.hideOpenThresholdProposals}
-                                @click=${() => this.store.hideOpenThresholdProposals = false}
+
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${state.loadingThresholdProposals}
                             >
-                                View Open Proposals
-                            </ui5-button>
-                            <ui5-button
-                                ?hidden=${state.hideOpenThresholdProposals}
-                                @click=${() => this.store.hideOpenThresholdProposals = true}
-                            >
-                                View Closed Proposals
-                            </ui5-button>
+                                <ui5-button
+                                    ?hidden=${!state.hideOpenThresholdProposals}
+                                    @click=${async () => {
+                                        this.store.hideOpenThresholdProposals = false;
+                                        
+                                        
+                                        this.store.loadingThresholdProposals = true;
+                                        await this.loadThresholdProposals();
+                                        this.store.loadingThresholdProposals = false;
+                                    }}
+                                >
+                                    View Open Proposals
+                                </ui5-button>
+                                
+                                <ui5-button
+                                    ?hidden=${state.hideOpenThresholdProposals}
+                                    @click=${async () => {
+                                        this.store.hideOpenThresholdProposals = true;
+
+                                        this.store.loadingThresholdProposals = true;
+                                        await this.loadThresholdProposals();
+                                        this.store.loadingThresholdProposals = false;
+                                    }}
+                                >
+                                    View Closed Proposals
+                                </ui5-button>
+                            </ui5-busy-indicator>
+
                         </div>
                     </ui5-card-header>
     
@@ -1173,6 +1280,24 @@ class DemergApp extends HTMLElement {
 
             <ui5-toast id="toast-proposal-created" placement="TopCenter">Proposal Created</ui5-toast>
             <ui5-toast id="toast-vote-recorded" placement="TopCenter">Vote Recorded</ui5-toast>
+
+            <ui5-dialog
+                header-text="Error"
+                .open=${state.showErrorDialog}
+            >   
+                <div>${state.errorMessage}</div>
+                <div slot="footer" class="dialog-footer">
+                    <div class="dialog-footer-space"></div>
+                    <ui5-button
+                        @click=${() => {
+                            this.store.showErrorDialog = false;
+                            this.store.errorMessage = '';
+                        }}
+                    >
+                        Ok
+                    </ui5-button>
+                </div>
+            </ui5-dialog>
         `;
     }
 }
