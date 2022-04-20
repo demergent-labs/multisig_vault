@@ -776,134 +776,134 @@ class DemergApp extends HTMLElement {
                         </div>
                     </ui5-card-header>
     
-                    ${state.hideSigners === true ? html`
-                        <ui5-table
-                            class="proposals-table"
-                            no-data-text="No ${state.hideOpenSignerProposals === true ? 'closed' : 'open'} proposals"
-                        >
-                            <ui5-table-column slot="columns" demand-popin>
-                                <ui5-label>ID</ui5-label>
-                            </ui5-table-column>
+                    <ui5-table
+                        ?hidden=${!state.hideSigners}
+                        class="proposals-table"
+                        no-data-text="No ${state.hideOpenSignerProposals === true ? 'closed' : 'open'} proposals"
+                    >
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>ID</ui5-label>
+                        </ui5-table-column>
 
-                            <ui5-table-column slot="columns" demand-popin>
-                                <ui5-label>Created At</ui5-label>
-                            </ui5-table-column>
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Created At</ui5-label>
+                        </ui5-table-column>
 
-                            <ui5-table-column slot="columns" demand-popin>
-                                <ui5-label>Proposer</ui5-label>
-                            </ui5-table-column>
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Proposer</ui5-label>
+                        </ui5-table-column>
 
-                            <ui5-table-column slot="columns" demand-popin>
-                                <ui5-label>Description</ui5-label>
-                            </ui5-table-column>
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Description</ui5-label>
+                        </ui5-table-column>
 
-                            <ui5-table-column slot="columns" demand-popin>
-                                <ui5-label>Signer</ui5-label>
-                            </ui5-table-column>
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Signer</ui5-label>
+                        </ui5-table-column>
 
-                            <ui5-table-column slot="columns" demand-popin>
-                                <ui5-label>Votes For</ui5-label>
-                            </ui5-table-column>
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Votes For</ui5-label>
+                        </ui5-table-column>
 
-                            <ui5-table-column slot="columns" demand-popin>
-                                <ui5-label>Votes Against</ui5-label>
-                            </ui5-table-column>
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Votes Against</ui5-label>
+                        </ui5-table-column>
 
-                            <ui5-table-column slot="columns" demand-popin>
-                                <ui5-label>Status</ui5-label>
-                            </ui5-table-column>
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Status</ui5-label>
+                        </ui5-table-column>
 
-                            ${state.hideOpenSignerProposals === false ? html`
-                                <ui5-table-column slot="columns"></ui5-table-column>
-                                <ui5-table-column slot="columns"></ui5-table-column>
-                            ` : ''}
+                        ${state.hideOpenSignerProposals === false ? html`
+                            <ui5-table-column slot="columns"></ui5-table-column>
+                            <ui5-table-column slot="columns"></ui5-table-column>
+                        ` : ''}
 
-                            ${state.signerProposals.filter((signerProposal) => {
-                                const open = signerProposal.adopted === false && signerProposal.rejected === false;
-                                const hidden = (open && state.hideOpenSignerProposals === true) || (!open && state.hideOpenSignerProposals === false);
+                        ${state.signerProposals.filter((signerProposal) => {
+                            const open = signerProposal.adopted === false && signerProposal.rejected === false;
+                            const hidden = (open && state.hideOpenSignerProposals === true) || (!open && state.hideOpenSignerProposals === false);
 
-                                return hidden === false;
-                            }).map((signerProposal) => {
-                                const idTrimmed = `${signerProposal.id.slice(0, 5)}...${signerProposal.id.slice(signerProposal.id.length - 5, signerProposal.id.length)}`;
-                                const proposerTrimmed = `${signerProposal.proposer.toString().slice(0, 5)}...${signerProposal.proposer.toString().slice(signerProposal.proposer.toString().length - 5, signerProposal.proposer.toString().length)}`;
+                            return hidden === false;
+                        }).map((signerProposal) => {
+                            const idTrimmed = `${signerProposal.id.slice(0, 5)}...${signerProposal.id.slice(signerProposal.id.length - 5, signerProposal.id.length)}`;
+                            const proposerTrimmed = `${signerProposal.proposer.toString().slice(0, 5)}...${signerProposal.proposer.toString().slice(signerProposal.proposer.toString().length - 5, signerProposal.proposer.toString().length)}`;
 
-                                const votesFor = signerProposal.votes.filter((vote) => vote.adopt === true).length;
-                                const votesAgainst = signerProposal.votes.filter((vote) => vote.adopt === false).length;
+                            const votesFor = signerProposal.votes.filter((vote) => vote.adopt === true).length;
+                            const votesAgainst = signerProposal.votes.filter((vote) => vote.adopt === false).length;
 
-                                const status = signerProposal.adopted === true ?
-                                    `Adopted ${new Date(Number((signerProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : signerProposal.rejected === true ?
-                                        `Rejected ${new Date(Number((signerProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
+                            const status = signerProposal.adopted === true ?
+                                `Adopted ${new Date(Number((signerProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : signerProposal.rejected === true ?
+                                    `Rejected ${new Date(Number((signerProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
 
-                                return html`
-                                    <ui5-table-row>
+                            return html`
+                                <ui5-table-row>
+                                    <ui5-table-cell>
+                                        <ui5-label title="${signerProposal.id}">${idTrimmed}</ui5-label>
+                                    </ui5-table-cell>
+
+                                    <ui5-table-cell>
+                                        <ui5-label>${new Date(Number(signerProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
+                                    </ui5-table-cell>
+
+                                    <ui5-table-cell>
+                                        <ui5-label title="${signerProposal.proposer}">${proposerTrimmed}</ui5-label>
+                                    </ui5-table-cell>
+
+                                    <ui5-table-cell>
+                                        <ui5-label>${signerProposal.description}</ui5-label>
+                                    </ui5-table-cell>
+
+                                    <ui5-table-cell>
+                                        <ui5-label>${signerProposal.signer}</ui5-label>
+                                    </ui5-table-cell>
+
+                                    <ui5-table-cell>
+                                        <ui5-label>${votesFor}</ui5-label>
+                                    </ui5-table-cell>
+
+                                    <ui5-table-cell>
+                                        <ui5-label>${votesAgainst}</ui5-label>
+                                    </ui5-table-cell>
+
+                                    <ui5-table-cell>
+                                        <ui5-label>${status}</ui5-label>
+                                    </ui5-table-cell>
+
+                                    ${state.hideOpenSignerProposals === false ? html`
                                         <ui5-table-cell>
-                                            <ui5-label title="${signerProposal.id}">${idTrimmed}</ui5-label>
-                                        </ui5-table-cell>
-
-                                        <ui5-table-cell>
-                                            <ui5-label>${new Date(Number(signerProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
-                                        </ui5-table-cell>
-
-                                        <ui5-table-cell>
-                                            <ui5-label title="${signerProposal.proposer}">${proposerTrimmed}</ui5-label>
-                                        </ui5-table-cell>
-
-                                        <ui5-table-cell>
-                                            <ui5-label>${signerProposal.description}</ui5-label>
-                                        </ui5-table-cell>
-
-                                        <ui5-table-cell>
-                                            <ui5-label>${signerProposal.signer}</ui5-label>
-                                        </ui5-table-cell>
-
-                                        <ui5-table-cell>
-                                            <ui5-label>${votesFor}</ui5-label>
-                                        </ui5-table-cell>
-
-                                        <ui5-table-cell>
-                                            <ui5-label>${votesAgainst}</ui5-label>
-                                        </ui5-table-cell>
-
-                                        <ui5-table-cell>
-                                            <ui5-label>${status}</ui5-label>
-                                        </ui5-table-cell>
-
-                                        ${state.hideOpenSignerProposals === false ? html`
-                                            <ui5-table-cell>
-                                                <ui5-busy-indicator
-                                                    size="Small"
-                                                    .active=${state.votingOnProposals[signerProposal.id]?.adopting}
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[signerProposal.id]?.adopting}
+                                            >
+                                                <ui5-button
+                                                    design="Positive"
+                                                    @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, true)}
                                                 >
-                                                    <ui5-button
-                                                        design="Positive"
-                                                        @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, true)}
-                                                    >
-                                                        Adopt
-                                                    </ui5-button>
-                                                </ui5-busy-indicator>
-                                            </ui5-table-cell>
+                                                    Adopt
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
 
-                                            <ui5-table-cell>
-                                                <ui5-busy-indicator
-                                                    size="Small"
-                                                    .active=${state.votingOnProposals[signerProposal.id]?.rejecting}
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[signerProposal.id]?.rejecting}
+                                            >
+                                                <ui5-button
+                                                    design="Negative"
+                                                    @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, false)}
                                                 >
-                                                    <ui5-button
-                                                        design="Negative"
-                                                        @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, false)}
-                                                    >
-                                                        Reject
-                                                    </ui5-button>
-                                                </ui5-busy-indicator>
-                                            </ui5-table-cell>
-                                        ` : ''}
-                                    </ui5-table-row>
-                                `;
-                            })}
-                        </ui5-table>
+                                                    Reject
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+                                    ` : ''}
+                                </ui5-table-row>
+                            `;
+                        })}
+                    </ui5-table>
 
-                    ` : html`
-                        <ui5-table
+                    <ui5-table
+                            ?hidden=${state.hideSigners}
                             class="proposals-table"
                             no-data-text="No signers"
                         >
@@ -920,9 +920,7 @@ class DemergApp extends HTMLElement {
                                     </ui5-table-row>
                                 `;
                             })}
-                        </ui5-table>
-                    `}
-
+                    </ui5-table>
                 </ui5-card>
     
                 ${state.hideCreateSignerProposal === false ? html`
