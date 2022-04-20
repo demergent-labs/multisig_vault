@@ -22,6 +22,7 @@ export interface DefiniteCanisterSettings {
 export interface NameResult { 'name' : string }
 export interface SignerProposal {
   'id' : string,
+  'remove' : boolean,
   'rejected_at' : [] | [bigint],
   'adopted_at' : [] | [bigint],
   'votes' : Array<Vote>,
@@ -98,7 +99,11 @@ export interface _SERVICE {
   'getTransferProposals' : () => Promise<Array<TransferProposal>>,
   'getTransfers' : () => Promise<Array<Transfer>>,
   'getVaultBalance' : () => Promise<VaultBalanceResult>,
-  'proposeSigner' : (arg_0: string, arg_1: Principal) => Promise<DefaultResult>,
+  'proposeSigner' : (
+      arg_0: string,
+      arg_1: Principal,
+      arg_2: boolean,
+    ) => Promise<DefaultResult>,
   'proposeThreshold' : (arg_0: string, arg_1: number) => Promise<DefaultResult>,
   'proposeTransfer' : (arg_0: string, arg_1: string, arg_2: bigint) => Promise<
       DefaultResult

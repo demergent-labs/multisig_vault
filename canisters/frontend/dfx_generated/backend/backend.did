@@ -4,6 +4,7 @@ type SignerProposal = record {
     "proposer": principal;
     "description": text;
     "signer": principal;
+    "remove": bool;
     "votes": vec Vote;
     "adopted": bool;
     "adopted_at": opt nat64;
@@ -125,7 +126,7 @@ service: (vec principal, nat8) -> {
     "getCanisterPrincipal": () -> (text) query;
     "getCanisterAddress": () -> (text) query;
     "getCanisterCycles": () -> (nat64) query;
-    "proposeSigner": (text, principal) -> (DefaultResult);
+    "proposeSigner": (text, principal, bool) -> (DefaultResult);
     "voteOnSignerProposal": (text, bool) -> (VoteOnProposalResult);
     "proposeThreshold": (text, nat8) -> (DefaultResult);
     "voteOnThresholdProposal": (text, bool) -> (VoteOnProposalResult);

@@ -23,7 +23,8 @@ export function voteOnSignerProposal(
     const checks_result = performChecks(
         caller,
         signerProposalId,
-        state.signerProposals
+        state.signerProposals,
+        state.signers
     );
 
     if (checks_result.ok === undefined) {
@@ -46,10 +47,12 @@ export function voteOnSignerProposal(
     return vote_on_proposal_result;
 }
 
+// TODO make sure that we use index types on State wherever possible
 function performChecks(
     caller: Principal,
     signerProposalId: string,
-    signerProposals: State['signerProposals']
+    signerProposals: State['signerProposals'],
+    signers: State['signers']
 ): VoteOnSignerProposalChecksResult {
     if (isSigner(caller) === false) {
         return {
@@ -85,6 +88,15 @@ function performChecks(
         };
     }
 
+    if (
+        signerProposal.remove === true &&
+        signers[signerProposal.signer] === undefined
+    ) {
+        return {
+            err: `Signer ${signerProposal.signer} does not exist`
+        };
+    }
+
     return {
         ok: signerProposal
     };
@@ -109,7 +121,12 @@ function getMutator(
 
     if (adoptVotes.length >= state.threshold) {
         return () => {
-            state.signers[signerProposal.signer] = signerProposal.signer;
+            if (signerProposal.remove === true) {
+                delete state.signers[signerProposal.signer];
+            }
+            else {
+                state.signers[signerProposal.signer] = signerProposal.signer;
+            }
     
             signerProposal.votes = newVotes;
             signerProposal.adopted = true;

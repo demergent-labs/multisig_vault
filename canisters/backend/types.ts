@@ -31,6 +31,7 @@ export type SignerProposal = {
     proposer: Principal;
     description: string;
     signer: Principal;
+    remove: boolean;
     votes: Vote[];
     adopted: boolean;
     adopted_at: Opt<nat64>;

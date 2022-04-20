@@ -33,7 +33,8 @@ import '@ui5/webcomponents/dist/BusyIndicator.js';
 import '@ui5/webcomponents/dist/Toast.js';
 import '@ui5/webcomponents/dist/Badge.js';
 import '@ui5/webcomponents/dist/Link.js';
-import "@ui5/webcomponents-fiori/dist/Bar.js";
+import '@ui5/webcomponents/dist/ToggleButton.js';
+import '@ui5/webcomponents-fiori/dist/Bar.js';
 
 // TODO use ui5-step-input instead of number input, set min and max, set initial value to the current threshold
 // TODO allow adding or removing a signer, probably use a toggle to say if you are adding or removing the signer
@@ -356,11 +357,11 @@ class DemergApp extends HTMLElement {
         this.store.creatingSignerProposal = true;
 
         try {
+            const description = (this.shadow.getElementById('input-signer-proposal-description') as any).value as string;
+            const signer = (this.shadow.getElementById('input-signer-proposal-signer') as any).value as string;
+            const remove = (this.shadow.getElementById('input-signer-proposal-remove') as any).pressed as boolean;
 
-            const description = (this.shadow.getElementById('input-signer-proposal-description') as any).value;
-            const signer = (this.shadow.getElementById('input-signer-proposal-signer') as any).value;
-
-            const result = await this.store.backend.proposeSigner(description, Principal.fromText(signer));
+            const result = await this.store.backend.proposeSigner(description, Principal.fromText(signer), remove);
 
             if (result.hasOwnProperty('ok')) {
                 this.loadData();
@@ -910,6 +911,10 @@ class DemergApp extends HTMLElement {
                         </ui5-table-column>
 
                         <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Add/Remove</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-column slot="columns" demand-popin>
                             <ui5-label>Votes For</ui5-label>
                         </ui5-table-column>
 
@@ -962,6 +967,10 @@ class DemergApp extends HTMLElement {
 
                                     <ui5-table-cell>
                                         <ui5-label>${signerProposal.signer}</ui5-label>
+                                    </ui5-table-cell>
+
+                                    <ui5-table-cell>
+                                        <ui5-label>${signerProposal.remove === true ? 'Remove' : 'Add'}</ui5-label>
                                     </ui5-table-cell>
 
                                     <ui5-table-cell>
@@ -1045,6 +1054,10 @@ class DemergApp extends HTMLElement {
                             <div class="demerg-input">
                                 <ui5-label for="input-signer-proposal-signer" required>Signer:</ui5-label>
                                 <ui5-input id="input-signer-proposal-signer"></ui5-input>
+                            </div>
+
+                            <div class="demerg-input">
+                                <ui5-toggle-button id="input-signer-proposal-remove" design="Negative">Remove signer</ui5-toggle-button>
                             </div>
                         </section>
     
