@@ -33,6 +33,9 @@ import '@ui5/webcomponents/dist/Badge.js';
 import '@ui5/webcomponents/dist/Link.js';
 import "@ui5/webcomponents-fiori/dist/Bar.js";
 
+// TODO use ui5-step-input instead of number input, set min and max, set initial value to the current threshold
+// TODO allow adding or removing a signer, probably use a toggle to say if you are adding or removing the signer
+
 type State = {
     canister_principal: {
         loading: boolean;
@@ -509,9 +512,28 @@ class DemergApp extends HTMLElement {
                     overflow-x: scroll;
                 }
 
+                .demerg-input-form {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    padding: .5rem;
+                }
+
+                .demerg-input {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    padding-bottom: .5rem;
+                }
+
                 /* TODO I would prefer to use classes provided by the ui5 web components, but I need more info: https://github.com/SAP/ui5-webcomponents/issues/5094 */
                 .dialog-footer {
+                    display: flex;
                     padding: .5rem;
+                }
+
+                .dialog-footer-main-button {
+                    margin-right: .25rem;
                 }
 
                 .dialog-footer-space {
@@ -701,18 +723,18 @@ class DemergApp extends HTMLElement {
                         header-text="Transfer Proposal"
                         .open=${true}
                     >
-                        <section class="login-form">
-                            <div>
+                        <section class="demerg-input-form">
+                            <div class="demerg-input">
                                 <ui5-label for="input-transfer-proposal-description" required>Description:</ui5-label>
                                 <ui5-input id="input-transfer-proposal-description"></ui5-input>
                             </div>
     
-                            <div>
+                            <div class="demerg-input">
                                 <ui5-label for="input-transfer-proposal-destination-address" required>Destination Address:</ui5-label>
                                 <ui5-input id="input-transfer-proposal-destination-address"></ui5-input>
                             </div>
     
-                            <div>
+                            <div class="demerg-input">
                                 <ui5-label for="input-transfer-proposal-amount" required>Amount:</ui5-label>
                                 <ui5-input id="input-transfer-proposal-amount" type="Number"></ui5-input>
                             </div>
@@ -725,14 +747,15 @@ class DemergApp extends HTMLElement {
                                 .active=${state.creatingTransferProposal}
                             >
                                 <ui5-button
+                                    class="dialog-footer-main-button"
                                     design="Emphasized"
                                     @click=${() => this.handleCreateTransferProposalClick()}
                                 >
                                     Create
                                 </ui5-button>
-    
-                                <ui5-button @click=${() => this.store.hideCreateTransferProposal = true}>Cancel</ui5-button>
                             </ui5-busy-indicator>
+
+                            <ui5-button @click=${() => this.store.hideCreateTransferProposal = true}>Cancel</ui5-button>
                         </div>
                     </ui5-dialog>
                 ` : ''}
@@ -928,13 +951,13 @@ class DemergApp extends HTMLElement {
                         header-text="Signer Proposal"
                         .open=${true}
                     >
-                        <section class="login-form">
-                            <div>
+                        <section class="demerg-input-form">
+                            <div class="demerg-input">
                                 <ui5-label for="input-signer-proposal-description" required>Description:</ui5-label>
                                 <ui5-input id="input-signer-proposal-description"></ui5-input>
                             </div>
     
-                            <div>
+                            <div class="demerg-input">
                                 <ui5-label for="input-signer-proposal-signer" required>Signer:</ui5-label>
                                 <ui5-input id="input-signer-proposal-signer"></ui5-input>
                             </div>
@@ -947,14 +970,15 @@ class DemergApp extends HTMLElement {
                                 .active=${state.creatingSignerProposal}
                             >
                                 <ui5-button
+                                    class="dialog-footer-main-button"
                                     design="Emphasized"
                                     @click=${() => this.handleCreateSignerProposalClick()}
                                 >
                                     Create
                                 </ui5-button>
-    
-                                <ui5-button @click=${() => this.store.hideCreateSignerProposal = true}>Cancel</ui5-button>
                             </ui5-busy-indicator>
+
+                            <ui5-button @click=${() => this.store.hideCreateSignerProposal = true}>Cancel</ui5-button>
                         </div>
                     </ui5-dialog>
                 ` : ''}
@@ -1114,13 +1138,13 @@ class DemergApp extends HTMLElement {
                         header-text="Threshold Proposal"
                         .open=${true}
                     >
-                        <section class="login-form">
-                            <div>
+                        <section class="demerg-input-form">
+                            <div class="demerg-input">
                                 <ui5-label for="input-threshold-proposal-description" required>Description:</ui5-label>
                                 <ui5-input id="input-threshold-proposal-description"></ui5-input>
                             </div>
     
-                            <div>
+                            <div class="demerg-input">
                                 <ui5-label for="input-threshold-proposal-threshold" required>Threshold:</ui5-label>
                                 <ui5-input id="input-threshold-proposal-threshold" type="Number"></ui5-input>
                             </div>
@@ -1133,14 +1157,15 @@ class DemergApp extends HTMLElement {
                                 .active=${state.creatingThresholdProposal}
                             >
                                 <ui5-button
+                                    class="dialog-footer-main-button"
                                     design="Emphasized"
                                     @click=${() => this.handleCreateThresholdProposalClick()}
                                 >
                                     Create
                                 </ui5-button>
-    
-                                <ui5-button @click=${() => this.store.hideCreateThresholdProposal = true}>Cancel</ui5-button>
                             </ui5-busy-indicator>
+
+                            <ui5-button @click=${() => this.store.hideCreateThresholdProposal = true}>Cancel</ui5-button>
                         </div>
                     </ui5-dialog>
                 ` : ''}
