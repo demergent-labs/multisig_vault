@@ -37,7 +37,6 @@ import '@ui5/webcomponents/dist/ToggleButton.js';
 import '@ui5/webcomponents-fiori/dist/Bar.js';
 
 // TODO use ui5-step-input instead of number input, set min and max, set initial value to the current threshold
-// TODO allow adding or removing a signer, probably use a toggle to say if you are adding or removing the signer
 
 // TODO split up into components
 // TODO fully generalize proposal components
@@ -90,6 +89,8 @@ type State = {
     loadingSignerProposals: boolean;
     loadingSigners: boolean;
     loadingThresholdProposals: boolean;
+    showIdentifiersTable: boolean;
+    showCyclesTable: boolean;
 };
 
 const InitialState: State = {
@@ -134,7 +135,9 @@ const InitialState: State = {
     loadingTransferProposals: false,
     loadingSignerProposals: false,
     loadingSigners: false,
-    loadingThresholdProposals: false
+    loadingThresholdProposals: false,
+    showIdentifiersTable: true,
+    showCyclesTable: false
 };
 
 class DemergApp extends HTMLElement {
@@ -514,10 +517,12 @@ class DemergApp extends HTMLElement {
         const thresholdSubtitleText = state.threshold.loading === true || state.signers.loading === true ? 'Loading...' : `${state.threshold.value} of ${state.signers.value.length} signers required`;
 
         const canisterBalanceText = state.balance.loading === true ? 'Loading...' : `${Number(state.balance.value * 10000n / BigInt(10**8)) / 10000} ICP`;
+        
+        const myPrincipalText = state.identity === null ? 'Loading...' : state.identity.getPrincipal().toString();
         const canisterPrincipalText = state.canister_principal.loading === true ? 'Loading...' : state.canister_principal.value;
         const canisterAddressText = state.canister_address.loading === true ? 'Loading...' : state.canister_address.value;
 
-        const transfersSubtitleText = `${canisterBalanceText} available in canister ${canisterPrincipalText} with ICP address ${canisterAddressText}`;
+        const transfersSubtitleText = `${canisterBalanceText} available`;
 
         return html`
             <style>
@@ -1289,6 +1294,167 @@ class DemergApp extends HTMLElement {
                         </div>
                     </ui5-dialog>
                 ` : ''}
+
+                <ui5-card class="proposals-container">
+                    <ui5-card-header title-text="Stats and Info">
+                        <div class="card-header-action-container" slot="action">
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${false}
+                            >
+                                <ui5-button
+                                    class="create-proposal-button"
+                                    design="Emphasized"
+                                    @click=${() => alert('Snapshot Cycles')}
+                                >
+                                    Snapshot Cycles
+                                </ui5-button>
+                            </ui5-busy-indicator>
+
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${false}
+                            >
+                                <ui5-button
+                                    class="create-proposal-button"
+                                    @click=${() => {
+                                        this.store.showIdentifiersTable = true;
+                                        this.store.showCyclesTable = false;
+                                    }}
+                                >
+                                    Identifiers
+                                </ui5-button>
+                            </ui5-busy-indicator>
+
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${false}
+                            >
+                                <ui5-button
+                                    class="create-proposal-button"
+                                    @click=${() => {
+                                        this.store.showCyclesTable = true;
+                                        this.store.showIdentifiersTable = false;
+
+                                        // TODO load the cycle info here
+                                    }}
+                                >
+                                    Cycles
+                                </ui5-button>
+                            </ui5-busy-indicator>
+                        </div>
+                    </ui5-card-header>
+    
+                    <ui5-table
+                        ?hidden=${!state.showIdentifiersTable}
+                        class="proposals-table"
+                    >
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>My Principal</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Canister Principal</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Canister ICP Address</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-row>
+                            <ui5-table-cell>
+                                <ui5-label>${myPrincipalText}</ui5-label>
+                            </ui5-table-cell>
+
+                            <ui5-table-cell>
+                                <ui5-label>${canisterPrincipalText}</ui5-label>
+                            </ui5-table-cell>
+
+                            <ui5-table-cell>
+                                <ui5-label>${canisterAddressText}</ui5-label>
+                            </ui5-table-cell>
+                        </ui5-table-row>
+                    </ui5-table>
+
+                    <ui5-table
+                        ?hidden=${!state.showCyclesTable}
+                        class="proposals-table"
+                    >
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Cycles Remaining</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Cycle Time Remaining</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Cycles/year</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Cycles/month</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Cycles/week</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Cycles/day</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Cycles/hour</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Cycles/min</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Cycles/sec</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-row>
+                            <ui5-table-cell>
+                                <ui5-label>N/A</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>N/A</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>N/A</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>N/A</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>N/A</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>N/A</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>N/A</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>N/A</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>N/A</ui5-label>
+                            </ui5-table-cell>
+                        </ui5-table-row>
+                    </ui5-table>
+                </ui5-card>
             </div>
 
             <ui5-toast id="toast-proposal-created" placement="TopCenter">Proposal Created</ui5-toast>
