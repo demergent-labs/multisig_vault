@@ -229,7 +229,7 @@ class DemergApp extends HTMLElement {
 
         const transferProposals = await this.store.backend.getTransferProposals();
         
-        this.store.transferProposals = transferProposals;
+        this.store.transferProposals = sortCreatedAtDescending(transferProposals);
     }
 
     async loadSignerProposals() {
@@ -242,7 +242,7 @@ class DemergApp extends HTMLElement {
 
         const signerProposals = await this.store.backend.getSignerProposals();
         
-        this.store.signerProposals = signerProposals;
+        this.store.signerProposals = sortCreatedAtDescending(signerProposals);
     }
 
     async loadSigners() {
@@ -271,7 +271,7 @@ class DemergApp extends HTMLElement {
 
         const thresholdProposals = await this.store.backend.getThresholdProposals();
         
-        this.store.thresholdProposals = thresholdProposals;
+        this.store.thresholdProposals = sortCreatedAtDescending(thresholdProposals);
     }
 
     async handleCreateThresholdProposalClick() {
@@ -288,7 +288,7 @@ class DemergApp extends HTMLElement {
             const description = (this.shadow.getElementById('input-threshold-proposal-description') as any).value;
             const threshold = (this.shadow.getElementById('input-threshold-proposal-threshold') as any).value;
 
-            const result = await this.store.backend.proposeThreshold(description, threshold);
+            const result = await this.store.backend.proposeThreshold(description, parseInt(threshold));
 
             if (result.hasOwnProperty('ok')) {
                 this.loadData();
@@ -1303,3 +1303,17 @@ class DemergApp extends HTMLElement {
 }
 
 window.customElements.define('demerg-app', DemergApp);
+
+function sortCreatedAtDescending<T extends { created_at: nat64 }>(proposals: T[]): T[] {
+    return [...proposals].sort((a, b) => {
+        if (a.created_at > b.created_at) {
+            return -1;
+        }
+
+        if (a.created_at < b.created_at) {
+            return 1;
+        }
+
+        return 0;
+    });
+}
