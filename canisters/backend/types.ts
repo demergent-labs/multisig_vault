@@ -7,6 +7,7 @@ import {
 } from 'azle';
 
 export type State = {
+    cycle_stats: CycleStats;
     signers: {
         [principal: Principal]: Principal | undefined;
     };
@@ -125,3 +126,21 @@ export type ProposeTransferChecksResult = Variant<{
 export type VoteMutator = () => VoteOnProposalResult;
 
 export type DefaultMutator = () => DefaultResult;
+
+export type CycleStats = {
+    cycles_remaining: nat64;
+    cycle_time_remaining: nat64;
+    cycles_per_year: nat64;
+    cycles_per_month: nat64;
+    cycles_per_week: nat64;
+    cycles_per_day: nat64;
+    cycles_per_hour: nat64;
+    cycles_per_min: nat64;
+    cycles_per_sec: nat64;
+    cycle_snapshots: CycleSnapshot[];
+};
+
+export type CycleSnapshot = {
+    cycles_remaining: nat64;
+    timestamp: nat64;
+};

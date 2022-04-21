@@ -11,6 +11,22 @@ export interface CanisterStatusResult {
   'settings' : DefiniteCanisterSettings,
   'module_hash' : [] | [Array<number>],
 }
+export interface CycleSnapshot {
+  'cycles_remaining' : bigint,
+  'timestamp' : bigint,
+}
+export interface CycleStats {
+  'cycles_remaining' : bigint,
+  'cycles_per_day' : bigint,
+  'cycles_per_min' : bigint,
+  'cycles_per_sec' : bigint,
+  'cycles_per_month' : bigint,
+  'cycles_per_hour' : bigint,
+  'cycles_per_week' : bigint,
+  'cycles_per_year' : bigint,
+  'cycle_snapshots' : Array<CycleSnapshot>,
+  'cycle_time_remaining' : bigint,
+}
 export type DefaultResult = { 'ok' : boolean } |
   { 'err' : string };
 export interface DefiniteCanisterSettings {
@@ -99,6 +115,7 @@ export interface _SERVICE {
   'getTransferProposals' : () => Promise<Array<TransferProposal>>,
   'getTransfers' : () => Promise<Array<Transfer>>,
   'getVaultBalance' : () => Promise<VaultBalanceResult>,
+  'get_cycle_stats' : () => Promise<CycleStats>,
   'proposeSigner' : (
       arg_0: string,
       arg_1: Principal,
@@ -108,6 +125,7 @@ export interface _SERVICE {
   'proposeTransfer' : (arg_0: string, arg_1: string, arg_2: bigint) => Promise<
       DefaultResult
     >,
+  'snapshot_cycles' : () => Promise<undefined>,
   'voteOnSignerProposal' : (arg_0: string, arg_1: boolean) => Promise<
       VoteOnProposalResult
     >,

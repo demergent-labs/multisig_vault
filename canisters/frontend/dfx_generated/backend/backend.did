@@ -1,3 +1,16 @@
+type CycleStats = record {
+    "cycles_remaining": nat64;
+    "cycle_time_remaining": nat64;
+    "cycles_per_year": nat64;
+    "cycles_per_month": nat64;
+    "cycles_per_week": nat64;
+    "cycles_per_day": nat64;
+    "cycles_per_hour": nat64;
+    "cycles_per_min": nat64;
+    "cycles_per_sec": nat64;
+    "cycle_snapshots": vec CycleSnapshot;
+};
+
 type SignerProposal = record {
     "id": text;
     "created_at": nat64;
@@ -86,6 +99,11 @@ type CanisterStatusResult = record {
     "cycles": nat;
 };
 
+type CycleSnapshot = record {
+    "cycles_remaining": nat64;
+    "timestamp": nat64;
+};
+
 type Vote = record {
     "voter": principal;
     "adopt": bool;
@@ -117,6 +135,7 @@ type TransferError = variant { "BadFee": record { "expected_fee": Tokens; }; "In
 type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
 
 service: (vec principal, nat8) -> {
+    "get_cycle_stats": () -> (CycleStats) query;
     "getSigners": () -> (vec principal) query;
     "getSignerProposals": () -> (vec SignerProposal) query;
     "getThreshold": () -> (nat8) query;
@@ -126,6 +145,7 @@ service: (vec principal, nat8) -> {
     "getCanisterPrincipal": () -> (text) query;
     "getCanisterAddress": () -> (text) query;
     "getCanisterCycles": () -> (nat64) query;
+    "snapshot_cycles": () -> ();
     "proposeSigner": (text, principal, bool) -> (DefaultResult);
     "voteOnSignerProposal": (text, bool) -> (VoteOnProposalResult);
     "proposeThreshold": (text, nat8) -> (DefaultResult);

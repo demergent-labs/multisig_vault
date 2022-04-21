@@ -2,6 +2,8 @@
 
 TODO explain the exact steps to take to setup the local environment, the order in which you should deploy the local canisters, the commands to do so, and the canister ids you should have after each step
 
+TODO let's add the bash commands to the azle testing script so we can properly test this
+
 Deploy the backend canister with original signers and threshold:
 
 ```bash

@@ -10,6 +10,7 @@ import {
 import { createActor } from '../dfx_generated/backend';
 import { ActorSubclass } from '@dfinity/agent';
 import {
+    CycleStats,
     ThresholdProposal,
     SignerProposal,
     TransferProposal,
@@ -18,7 +19,6 @@ import {
 import { Principal } from '@dfinity/principal';
 import { AuthClient } from '@dfinity/auth-client';
 import { Identity } from '@dfinity/agent';
-import './demerg-proposal';
 import '@ui5/webcomponents/dist/Card.js';
 import '@ui5/webcomponents/dist/CardHeader.js';
 import '@ui5/webcomponents/dist/Button.js';
@@ -31,7 +31,6 @@ import '@ui5/webcomponents/dist/Dialog.js';
 import '@ui5/webcomponents/dist/Input.js';
 import '@ui5/webcomponents/dist/BusyIndicator.js';
 import '@ui5/webcomponents/dist/Toast.js';
-import '@ui5/webcomponents/dist/Badge.js';
 import '@ui5/webcomponents/dist/Link.js';
 import '@ui5/webcomponents/dist/ToggleButton.js';
 import '@ui5/webcomponents-fiori/dist/Bar.js';
@@ -43,6 +42,7 @@ import '@ui5/webcomponents-fiori/dist/Bar.js';
 
 type State = {
     backend: ActorSubclass<_SERVICE> | null;
+    cycles_stats: CycleStats | null;
     canister_principal: {
         loading: boolean;
         value: string;
@@ -91,10 +91,12 @@ type State = {
     loadingThresholdProposals: boolean;
     showIdentifiersTable: boolean;
     showCyclesTable: boolean;
+    loadingCycles: boolean;
 };
 
 const InitialState: State = {
     backend: null,
+    cycles_stats: null,
     canister_principal: {
         loading: true,
         value: ''
@@ -137,7 +139,8 @@ const InitialState: State = {
     loadingSigners: false,
     loadingThresholdProposals: false,
     showIdentifiersTable: true,
-    showCyclesTable: false
+    showCyclesTable: false,
+    loadingCycles: false
 };
 
 class DemergApp extends HTMLElement {
@@ -219,8 +222,24 @@ class DemergApp extends HTMLElement {
             this.loadSigners(),
             this.loadTransferProposals(),
             this.loadSignerProposals(),
-            this.loadThresholdProposals()
+            this.loadThresholdProposals(),
+            this.loadCycleStats()
         ]);
+    }
+
+    async loadCycleStats() {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
+
+            return;
+        }
+        
+        const cycleStats = await this.store.backend.get_cycle_stats();
+
+        this.store.cycles_stats = cycleStats;
+
+        console.log('this.store.cycles_stats.cycle_snapshots', this.store.cycles_stats.cycle_snapshots);
     }
 
     async loadTransferProposals() {
@@ -289,14 +308,14 @@ class DemergApp extends HTMLElement {
         this.store.creatingThresholdProposal = true;
 
         try {
-            const description = (this.shadow.getElementById('input-threshold-proposal-description') as any).value;
-            const threshold = (this.shadow.getElementById('input-threshold-proposal-threshold') as any).value;
+            const description = (this.shadow.querySelector('#input-threshold-proposal-description') as any).value as string;
+            const threshold = (this.shadow.querySelector('#input-threshold-proposal-threshold') as any).value as number;
 
-            const result = await this.store.backend.proposeThreshold(description, parseInt(threshold));
+            const result = await this.store.backend.proposeThreshold(description, threshold);
 
             if (result.hasOwnProperty('ok')) {
                 this.loadData();
-                (this.shadow.getElementById('toast-proposal-created') as any).show();
+                (this.shadow.querySelector('#toast-proposal-created') as any).show();
             }
             else {
                 this.handleError((result as any).err);
@@ -330,7 +349,7 @@ class DemergApp extends HTMLElement {
 
             if (result.hasOwnProperty('ok')) {
                 this.loadData();
-                (this.shadow.getElementById('toast-vote-recorded') as any).show();
+                (this.shadow.querySelector('#toast-vote-recorded') as any).show();
             }
             else {
                 this.handleError((result as any).err);
@@ -360,15 +379,15 @@ class DemergApp extends HTMLElement {
         this.store.creatingSignerProposal = true;
 
         try {
-            const description = (this.shadow.getElementById('input-signer-proposal-description') as any).value as string;
-            const signer = (this.shadow.getElementById('input-signer-proposal-signer') as any).value as string;
-            const remove = (this.shadow.getElementById('input-signer-proposal-remove') as any).pressed as boolean;
+            const description = (this.shadow.querySelector('#input-signer-proposal-description') as any).value as string;
+            const signer = (this.shadow.querySelector('#input-signer-proposal-signer') as any).value as string;
+            const remove = (this.shadow.querySelector('#input-signer-proposal-remove') as any).pressed as boolean;
 
             const result = await this.store.backend.proposeSigner(description, Principal.fromText(signer), remove);
 
             if (result.hasOwnProperty('ok')) {
                 this.loadData();
-                (this.shadow.getElementById('toast-proposal-created') as any).show();
+                (this.shadow.querySelector('#toast-proposal-created') as any).show();
             }
             else {
                 this.handleError((result as any).err);
@@ -402,7 +421,7 @@ class DemergApp extends HTMLElement {
 
             if (result.hasOwnProperty('ok')) {
                 this.loadData();
-                (this.shadow.getElementById('toast-vote-recorded') as any).show();
+                (this.shadow.querySelector('#toast-vote-recorded') as any).show();
             }
             else {
                 this.handleError((result as any).err);
@@ -434,9 +453,9 @@ class DemergApp extends HTMLElement {
         this.store.creatingTransferProposal = true;
 
         try {
-            const description = (this.shadow.getElementById('input-transfer-proposal-description') as any).value;
-            const destinationAddress = (this.shadow.getElementById('input-transfer-proposal-destination-address') as any).value;
-            const amountString = (this.shadow.getElementById('input-transfer-proposal-amount') as any).value;
+            const description = (this.shadow.querySelector('#input-transfer-proposal-description') as any).value;
+            const destinationAddress = (this.shadow.querySelector('#input-transfer-proposal-destination-address') as any).value;
+            const amountString = (this.shadow.querySelector('#input-transfer-proposal-amount') as any).value;
             const decimals = amountString?.split('.')[1]?.length ?? 0;
             const amount = BigInt(Number(amountString ?? 0) * 10**decimals) * BigInt(10**(8 - decimals));
 
@@ -444,7 +463,7 @@ class DemergApp extends HTMLElement {
 
             if (result.hasOwnProperty('ok')) {
                 this.loadData();
-                (this.shadow.getElementById('toast-proposal-created') as any).show();
+                (this.shadow.querySelector('#toast-proposal-created') as any).show();
             }
             else {
                 this.handleError((result as any).err);
@@ -478,7 +497,7 @@ class DemergApp extends HTMLElement {
 
             if (result.hasOwnProperty('ok')) {
                 this.loadData();
-                (this.shadow.getElementById('toast-vote-recorded') as any).show();
+                (this.shadow.querySelector('#toast-vote-recorded') as any).show();
             }
             else {
                 this.handleError((result as any).err);
@@ -495,6 +514,17 @@ class DemergApp extends HTMLElement {
                 rejecting: false
             }
         };
+    }
+
+    async snapshotCycles() {
+        if (this.store.backend === null) {
+            this.store.errorMessage = 'You are not authenticated, please refresh.'
+            this.store.showErrorDialog = true;
+
+            return;
+        }
+
+        await this.store.backend.snapshot_cycles();
     }
 
     handleError(error: any) {
@@ -516,13 +546,21 @@ class DemergApp extends HTMLElement {
     render(state: State) {
         const thresholdSubtitleText = state.threshold.loading === true || state.signers.loading === true ? 'Loading...' : `${state.threshold.value} of ${state.signers.value.length} signers required`;
 
-        const canisterBalanceText = state.balance.loading === true ? 'Loading...' : `${Number(state.balance.value * 10000n / BigInt(10**8)) / 10000} ICP`;
+        const canisterBalanceText = state.balance.loading === true ? 'Loading...' : `${Number(state.balance.value * 10000n / BigInt(10**8)) / 10000} ICP available`;
         
         const myPrincipalText = state.identity === null ? 'Loading...' : state.identity.getPrincipal().toString();
         const canisterPrincipalText = state.canister_principal.loading === true ? 'Loading...' : state.canister_principal.value;
         const canisterAddressText = state.canister_address.loading === true ? 'Loading...' : state.canister_address.value;
 
-        const transfersSubtitleText = `${canisterBalanceText} available`;
+        const cycles_remaining = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_remaining);
+        const cycle_time_remaining = state.cycles_stats === null ? 'Loading...' : nanoseconds_to_time_remaining_string(state.cycles_stats.cycle_time_remaining);
+        const cycles_per_year = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_year);
+        const cycles_per_month = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_month);
+        const cycles_per_week = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_week);
+        const cycles_per_day = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_day);
+        const cycles_per_hour = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_hour);
+        const cycles_per_min = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_min);
+        const cycles_per_sec = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_sec);
 
         return html`
             <style>
@@ -583,6 +621,10 @@ class DemergApp extends HTMLElement {
                 .view-signers-button {
                     margin-right: .25rem;
                 }
+
+                .number-input {
+
+                }
             </style>
 
             <ui5-bar design="Header">
@@ -605,7 +647,7 @@ class DemergApp extends HTMLElement {
 
             <div class="main-container">
                 <ui5-card class="proposals-container">
-                    <ui5-card-header title-text="Transfers" subtitle-text="${transfersSubtitleText}">
+                    <ui5-card-header title-text="Transfers" subtitle-text="${canisterBalanceText}">
                         <div class="card-header-action-container" slot="action">
                             <ui5-button
                                 class="create-proposal-button"
@@ -1272,6 +1314,24 @@ class DemergApp extends HTMLElement {
                             <div class="demerg-input">
                                 <ui5-label for="input-threshold-proposal-threshold" required>Threshold:</ui5-label>
                                 <ui5-input id="input-threshold-proposal-threshold" type="Number"></ui5-input>
+                                <!-- <input
+                                    id="input-threshold-proposal-threshold"
+                                    class="number-input"
+                                    type="number"
+                                    min="1"
+                                    max="${state.signers.value.length}"
+                                    value="${state.threshold.value}"
+                                > -->
+                                <!-- <ui5-slider
+                                    id="input-threshold-proposal-threshold"
+                                    min="1"
+                                    max="${state.signers.value.length}"
+                                    step="1"
+                                    value="${state.threshold.value}"
+                                    show-tooltip
+                                    label-interval="1"
+                                    show-tickmarks
+                                ></ui5-slider> -->
                             </div>
                         </section>
     
@@ -1300,48 +1360,43 @@ class DemergApp extends HTMLElement {
                         <div class="card-header-action-container" slot="action">
                             <ui5-busy-indicator
                                 size="Small"
-                                .active=${false}
+                                .active=${state.loadingCycles}
                             >
                                 <ui5-button
                                     class="create-proposal-button"
                                     design="Emphasized"
-                                    @click=${() => alert('Snapshot Cycles')}
+                                    @click=${async () => {
+                                        this.store.loadingCycles =  true;
+                                        
+                                        await this.snapshotCycles();
+                                        await this.loadCycleStats();
+
+                                        this.store.loadingCycles = false;
+                                    }}
                                 >
                                     Snapshot Cycles
                                 </ui5-button>
                             </ui5-busy-indicator>
 
-                            <ui5-busy-indicator
-                                size="Small"
-                                .active=${false}
+                            <ui5-button
+                                class="create-proposal-button"
+                                @click=${() => {
+                                    this.store.showIdentifiersTable = true;
+                                    this.store.showCyclesTable = false;
+                                }}
                             >
-                                <ui5-button
-                                    class="create-proposal-button"
-                                    @click=${() => {
-                                        this.store.showIdentifiersTable = true;
-                                        this.store.showCyclesTable = false;
-                                    }}
-                                >
-                                    Identifiers
-                                </ui5-button>
-                            </ui5-busy-indicator>
+                                Identifiers
+                            </ui5-button>
 
-                            <ui5-busy-indicator
-                                size="Small"
-                                .active=${false}
+                            <ui5-button
+                                class="create-proposal-button"
+                                @click=${() => {
+                                    this.store.showCyclesTable = true;
+                                    this.store.showIdentifiersTable = false;
+                                }}
                             >
-                                <ui5-button
-                                    class="create-proposal-button"
-                                    @click=${() => {
-                                        this.store.showCyclesTable = true;
-                                        this.store.showIdentifiersTable = false;
-
-                                        // TODO load the cycle info here
-                                    }}
-                                >
-                                    Cycles
-                                </ui5-button>
-                            </ui5-busy-indicator>
+                                Cycles
+                            </ui5-button>
                         </div>
                     </ui5-card-header>
     
@@ -1418,39 +1473,39 @@ class DemergApp extends HTMLElement {
 
                         <ui5-table-row>
                             <ui5-table-cell>
-                                <ui5-label>N/A</ui5-label>
+                                <ui5-label>${cycles_remaining}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>N/A</ui5-label>
+                                <ui5-label>${cycle_time_remaining}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>N/A</ui5-label>
+                                <ui5-label>${cycles_per_year}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>N/A</ui5-label>
+                                <ui5-label>${cycles_per_month}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>N/A</ui5-label>
+                                <ui5-label>${cycles_per_week}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>N/A</ui5-label>
+                                <ui5-label>${cycles_per_day}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>N/A</ui5-label>
+                                <ui5-label>${cycles_per_hour}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>N/A</ui5-label>
+                                <ui5-label>${cycles_per_min}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>N/A</ui5-label>
+                                <ui5-label>${cycles_per_sec}</ui5-label>
                             </ui5-table-cell>
                         </ui5-table-row>
                     </ui5-table>
@@ -1495,4 +1550,53 @@ function sortCreatedAtDescending<T extends { created_at: nat64 }>(proposals: T[]
 
         return 0;
     });
+}
+
+function separate_cycles(cycles: string | number | bigint) {
+    return cycles
+        .toString()
+        .split('')
+        .reverse()
+        .reduce((result, char, index) => {
+            return `${result}${index !== 0 && index % 3 === 0 ? '_' : ''}${char}`;
+        }, '')
+        .split('')
+        .reverse()
+        .join('');
+}
+
+function nanoseconds_to_time_remaining_string(nanoseconds: nat64): string {
+    const NANOS_PER_SECOND = 1_000_000_000n;
+    const NANOS_PER_MINUTE = 60n * NANOS_PER_SECOND;
+    const NANOS_PER_HOUR = 60n * NANOS_PER_MINUTE;
+    const NANOS_PER_DAY = 24n * NANOS_PER_HOUR;
+    const NANOS_PER_WEEK = 7n * NANOS_PER_DAY;
+    const NANOS_PER_MONTH = 4n * NANOS_PER_WEEK;
+    const NANOS_PER_YEAR = 12n * NANOS_PER_MONTH;
+ 
+    const years = nanoseconds / NANOS_PER_YEAR;
+    const months = nanoseconds / NANOS_PER_MONTH;
+    const weeks = nanoseconds / NANOS_PER_WEEK;
+    const days = nanoseconds / NANOS_PER_DAY;
+    const hours = nanoseconds / NANOS_PER_HOUR;
+    const minutes = nanoseconds / NANOS_PER_MINUTE;
+    const seconds = nanoseconds / NANOS_PER_SECOND;
+
+    const years_string = years === 0n ? [] : [`${years} ${years === 1n ? 'year' : 'years'}`];
+    const months_string = months === 0n ? [] : [`${months} ${months === 1n ? 'month' : 'months'}`];
+    const weeks_string = weeks === 0n ? [] : [`${weeks} ${weeks === 1n ? 'week' : 'weeks'}`];
+    const days_string = days === 0n ? [] : [`${days} ${days === 1n ? 'day' : 'days'}`];
+    const hours_string = hours === 0n ? [] : [`${hours} ${hours === 1n ? 'hour' : 'hours'}`];
+    const minutes_string = minutes === 0n ? [] : [`${minutes} ${minutes === 1n ? 'minute' : 'minutes'}`];
+    const seconds_string = seconds === 0n ? [] : [`${seconds} ${seconds === 1n ? 'second' : 'seconds'}`];
+
+    return [
+        ...years_string,
+        ...months_string,
+        ...weeks_string,
+        ...days_string,
+        ...hours_string,
+        ...minutes_string,
+        ...seconds_string
+    ].join(', ');
 }

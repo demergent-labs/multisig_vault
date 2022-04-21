@@ -47,6 +47,22 @@ export const idlFactory = ({ IDL }) => {
     'ok' : IDL.Nat64,
     'err' : IDL.Text,
   });
+  const CycleSnapshot = IDL.Record({
+    'cycles_remaining' : IDL.Nat64,
+    'timestamp' : IDL.Nat64,
+  });
+  const CycleStats = IDL.Record({
+    'cycles_remaining' : IDL.Nat64,
+    'cycles_per_day' : IDL.Nat64,
+    'cycles_per_min' : IDL.Nat64,
+    'cycles_per_sec' : IDL.Nat64,
+    'cycles_per_month' : IDL.Nat64,
+    'cycles_per_hour' : IDL.Nat64,
+    'cycles_per_week' : IDL.Nat64,
+    'cycles_per_year' : IDL.Nat64,
+    'cycle_snapshots' : IDL.Vec(CycleSnapshot),
+    'cycle_time_remaining' : IDL.Nat64,
+  });
   const DefaultResult = IDL.Variant({ 'ok' : IDL.Bool, 'err' : IDL.Text });
   const VoteOnProposalAction = IDL.Variant({
     'voted' : IDL.Null,
@@ -76,6 +92,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getTransfers' : IDL.Func([], [IDL.Vec(Transfer)], ['query']),
     'getVaultBalance' : IDL.Func([], [VaultBalanceResult], []),
+    'get_cycle_stats' : IDL.Func([], [CycleStats], ['query']),
     'proposeSigner' : IDL.Func(
         [IDL.Text, IDL.Principal, IDL.Bool],
         [DefaultResult],
@@ -87,6 +104,7 @@ export const idlFactory = ({ IDL }) => {
         [DefaultResult],
         [],
       ),
+    'snapshot_cycles' : IDL.Func([], [], []),
     'voteOnSignerProposal' : IDL.Func(
         [IDL.Text, IDL.Bool],
         [VoteOnProposalResult],
