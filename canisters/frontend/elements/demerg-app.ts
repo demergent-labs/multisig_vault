@@ -36,6 +36,11 @@ import '@ui5/webcomponents/dist/Link.js';
 import '@ui5/webcomponents/dist/ToggleButton.js';
 import '@ui5/webcomponents-fiori/dist/Bar.js';
 
+import '@spectrum-web-components/theme/sp-theme.js';
+import '@spectrum-web-components/theme/src/themes.js';
+import '@spectrum-web-components/number-field/sp-number-field.js';
+import '@spectrum-web-components/slider/sp-slider.js';
+
 // TODO use ui5-step-input instead of number input, set min and max, set initial value to the current threshold
 
 // TODO split up into components
@@ -464,9 +469,9 @@ class DemergApp extends HTMLElement {
         this.store.creatingTransferProposal = true;
 
         try {
-            const description = (this.shadow.querySelector('#input-transfer-proposal-description') as any).value;
-            const destinationAddress = (this.shadow.querySelector('#input-transfer-proposal-destination-address') as any).value;
-            const amountString = (this.shadow.querySelector('#input-transfer-proposal-amount') as any).value;
+            const description = (this.shadow.querySelector('#input-transfer-proposal-description') as any).value as string;
+            const destinationAddress = (this.shadow.querySelector('#input-transfer-proposal-destination-address') as any).value as string;
+            const amountString = (this.shadow.querySelector('#input-transfer-proposal-amount') as any).value.toString() as string;
             const decimals = amountString?.split('.')[1]?.length ?? 0;
             const amount = BigInt(Number(amountString ?? 0) * 10**decimals) * BigInt(10**(8 - decimals));
 
@@ -610,13 +615,22 @@ class DemergApp extends HTMLElement {
                     flex-direction: column;
                     align-items: center;
                     padding: .5rem;
+                    box-sizing: border-box;
+                    width: 100%;
                 }
 
                 .demerg-input {
                     display: flex;
                     flex-direction: column;
-                    align-items: flex-start;
-                    padding-bottom: .5rem;
+                    align-items: center;
+                    padding-bottom: .75rem;
+                    box-sizing: border-box;
+                    width: 100%;
+                }
+
+                .demerg-input-and-label {
+                    display: flex;
+                    flex-direction: column;
                 }
 
                 /* TODO I would prefer to use classes provided by the ui5 web components, but I need more info: https://github.com/SAP/ui5-webcomponents/issues/5094 */
@@ -854,18 +868,33 @@ class DemergApp extends HTMLElement {
                     >
                         <section class="demerg-input-form">
                             <div class="demerg-input">
-                                <ui5-label for="input-transfer-proposal-description" required>Description:</ui5-label>
-                                <ui5-input id="input-transfer-proposal-description"></ui5-input>
+                                <div class="demerg-input-and-label">
+                                    <ui5-label for="input-transfer-proposal-description" required>Description:</ui5-label>
+                                    <ui5-input id="input-transfer-proposal-description"></ui5-input>
+                                </div>
                             </div>
     
                             <div class="demerg-input">
-                                <ui5-label for="input-transfer-proposal-destination-address" required>Destination Address:</ui5-label>
-                                <ui5-input id="input-transfer-proposal-destination-address"></ui5-input>
+                                <div class="demerg-input-and-label">
+                                    <ui5-label for="input-transfer-proposal-destination-address" required>Destination Address:</ui5-label>
+                                    <ui5-input id="input-transfer-proposal-destination-address"></ui5-input>
+                                </div>
                             </div>
     
                             <div class="demerg-input">
-                                <ui5-label for="input-transfer-proposal-amount" required>Amount:</ui5-label>
-                                <ui5-input id="input-transfer-proposal-amount" type="Number"></ui5-input>
+                                <div class="demerg-input-and-label">
+                                    <ui5-label for="input-transfer-proposal-amount" required>Amount:</ui5-label>
+                                    <sp-theme scale="large">
+                                        <sp-number-field
+                                            id="input-transfer-proposal-amount"
+                                            style="width: 200px"
+                                            value="0"
+                                            format-options='{ "style": "currency", "currency": "ICP" }'
+                                            min="0"
+                                            max="${state.balance.loading === true ? 0 : Number(state.balance.value * 10000n / BigInt(10**8)) / 10000}"
+                                        ></sp-number-field>
+                                    </sp-theme>
+                                </div>
                             </div>
                         </section>
     
@@ -1068,31 +1097,25 @@ class DemergApp extends HTMLElement {
                     >
                         <section class="demerg-input-form">
                             <div class="demerg-input">
-                                <ui5-label for="input-threshold-proposal-description" required>Description:</ui5-label>
-                                <ui5-input id="input-threshold-proposal-description"></ui5-input>
+                                <div class="demerg-input-and-label">
+                                    <ui5-label for="input-threshold-proposal-description" required>Description:</ui5-label>
+                                    <ui5-input id="input-threshold-proposal-description" style="margin-bottom: .75rem"></ui5-input>
+                                    <ui5-label for="input-threshold-proposal-threshold" required>Threshold:</ui5-label>
+                                </div>
                             </div>
     
                             <div class="demerg-input">
-                                <ui5-label for="input-threshold-proposal-threshold" required>Threshold:</ui5-label>
-                                <ui5-input id="input-threshold-proposal-threshold" type="Number"></ui5-input>
-                                <!-- <input
-                                    id="input-threshold-proposal-threshold"
-                                    class="number-input"
-                                    type="number"
-                                    min="1"
-                                    max="${state.signers.value.length}"
-                                    value="${state.threshold.value}"
-                                > -->
-                                <!-- <ui5-slider
-                                    id="input-threshold-proposal-threshold"
-                                    min="1"
-                                    max="${state.signers.value.length}"
-                                    step="1"
-                                    value="${state.threshold.value}"
-                                    show-tooltip
-                                    label-interval="1"
-                                    show-tickmarks
-                                ></ui5-slider> -->
+                                <sp-theme style="width: 100%" scale="large" color="dark">
+                                    <sp-slider
+                                        id="input-threshold-proposal-threshold"
+                                        variant="tick"
+                                        tick-step="1"
+                                        tick-labels
+                                        value="${state.threshold.value}"
+                                        min="0"
+                                        max="${state.signers.value.length}"
+                                    ></sp-slider>
+                                </sp-theme>
                             </div>
                         </section>
     
@@ -1344,13 +1367,17 @@ class DemergApp extends HTMLElement {
                     >
                         <section class="demerg-input-form">
                             <div class="demerg-input">
-                                <ui5-label for="input-signer-proposal-description" required>Description:</ui5-label>
-                                <ui5-input id="input-signer-proposal-description"></ui5-input>
+                                <div class="demerg-input-and-label">
+                                    <ui5-label for="input-signer-proposal-description" required>Description:</ui5-label>
+                                    <ui5-input id="input-signer-proposal-description"></ui5-input>
+                                </div>
                             </div>
     
                             <div class="demerg-input">
-                                <ui5-label for="input-signer-proposal-signer" required>Signer:</ui5-label>
-                                <ui5-input id="input-signer-proposal-signer"></ui5-input>
+                                <div class="demerg-input-and-label">
+                                    <ui5-label for="input-signer-proposal-signer" required>Signer:</ui5-label>
+                                    <ui5-input id="input-signer-proposal-signer"></ui5-input>
+                                </div>
                             </div>
 
                             <div class="demerg-input">
