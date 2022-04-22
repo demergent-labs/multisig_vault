@@ -7,7 +7,8 @@ import {
 } from 'azle';
 
 export type State = {
-    cycle_stats: CycleStats;
+    frontend_cycle_stats: CycleStats;
+    backend_cycle_stats: CycleStats;
     signers: {
         [principal: Principal]: Principal | undefined;
     };
@@ -143,4 +144,19 @@ export type CycleStats = {
 export type CycleSnapshot = {
     cycles_remaining: nat64;
     timestamp: nat64;
+};
+
+export type CycleStatsInfo = {
+    frontend: CycleStats;
+    backend: CycleStats;
+};
+
+export type ControllersInfoResult = Variant<{
+    ok?: ControllersInfo;
+    err?: string;
+}>;
+
+type ControllersInfo = {
+    frontend: Principal[];
+    backend: Principal[];
 };

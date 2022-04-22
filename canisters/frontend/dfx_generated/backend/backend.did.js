@@ -47,6 +47,14 @@ export const idlFactory = ({ IDL }) => {
     'ok' : IDL.Nat64,
     'err' : IDL.Text,
   });
+  const ControllersInfo = IDL.Record({
+    'frontend' : IDL.Vec(IDL.Principal),
+    'backend' : IDL.Vec(IDL.Principal),
+  });
+  const ControllersInfoResult = IDL.Variant({
+    'ok' : ControllersInfo,
+    'err' : IDL.Text,
+  });
   const CycleSnapshot = IDL.Record({
     'cycles_remaining' : IDL.Nat64,
     'timestamp' : IDL.Nat64,
@@ -63,6 +71,10 @@ export const idlFactory = ({ IDL }) => {
     'cycle_snapshots' : IDL.Vec(CycleSnapshot),
     'cycle_time_remaining' : IDL.Nat64,
   });
+  const CycleStatsInfo = IDL.Record({
+    'frontend' : CycleStats,
+    'backend' : CycleStats,
+  });
   const DefaultResult = IDL.Variant({ 'ok' : IDL.Bool, 'err' : IDL.Text });
   const VoteOnProposalAction = IDL.Variant({
     'voted' : IDL.Null,
@@ -75,7 +87,6 @@ export const idlFactory = ({ IDL }) => {
   });
   return IDL.Service({
     'getCanisterAddress' : IDL.Func([], [IDL.Text], ['query']),
-    'getCanisterCycles' : IDL.Func([], [IDL.Nat64], ['query']),
     'getCanisterPrincipal' : IDL.Func([], [IDL.Text], ['query']),
     'getSignerProposals' : IDL.Func([], [IDL.Vec(SignerProposal)], ['query']),
     'getSigners' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
@@ -92,7 +103,8 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getTransfers' : IDL.Func([], [IDL.Vec(Transfer)], ['query']),
     'getVaultBalance' : IDL.Func([], [VaultBalanceResult], []),
-    'get_cycle_stats' : IDL.Func([], [CycleStats], ['query']),
+    'get_controllers_info' : IDL.Func([], [ControllersInfoResult], []),
+    'get_cycle_stats_info' : IDL.Func([], [CycleStatsInfo], ['query']),
     'proposeSigner' : IDL.Func(
         [IDL.Text, IDL.Principal, IDL.Bool],
         [DefaultResult],
@@ -104,7 +116,7 @@ export const idlFactory = ({ IDL }) => {
         [DefaultResult],
         [],
       ),
-    'snapshot_cycles' : IDL.Func([], [], []),
+    'snapshot_cycles' : IDL.Func([], [DefaultResult], []),
     'voteOnSignerProposal' : IDL.Func(
         [IDL.Text, IDL.Bool],
         [VoteOnProposalResult],

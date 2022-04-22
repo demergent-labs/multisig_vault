@@ -1,14 +1,6 @@
-type CycleStats = record {
-    "cycles_remaining": nat64;
-    "cycle_time_remaining": nat64;
-    "cycles_per_year": nat64;
-    "cycles_per_month": nat64;
-    "cycles_per_week": nat64;
-    "cycles_per_day": nat64;
-    "cycles_per_hour": nat64;
-    "cycles_per_min": nat64;
-    "cycles_per_sec": nat64;
-    "cycle_snapshots": vec CycleSnapshot;
+type CycleStatsInfo = record {
+    "frontend": CycleStats;
+    "backend": CycleStats;
 };
 
 type SignerProposal = record {
@@ -99,6 +91,19 @@ type CanisterStatusResult = record {
     "cycles": nat;
 };
 
+type CycleStats = record {
+    "cycles_remaining": nat64;
+    "cycle_time_remaining": nat64;
+    "cycles_per_year": nat64;
+    "cycles_per_month": nat64;
+    "cycles_per_week": nat64;
+    "cycles_per_day": nat64;
+    "cycles_per_hour": nat64;
+    "cycles_per_min": nat64;
+    "cycles_per_sec": nat64;
+    "cycle_snapshots": vec CycleSnapshot;
+};
+
 type CycleSnapshot = record {
     "cycles_remaining": nat64;
     "timestamp": nat64;
@@ -120,11 +125,18 @@ type DefiniteCanisterSettings = record {
     "freezing_threshold": nat;
 };
 
+type ControllersInfo = record {
+    "frontend": vec principal;
+    "backend": vec principal;
+};
+
 type DefaultResult = variant { "ok": bool; "err": text };
 
 type VoteOnProposalResult = variant { "ok": VoteOnProposalAction; "err": text };
 
 type VaultBalanceResult = variant { "ok": nat64; "err": text };
+
+type ControllersInfoResult = variant { "ok": ControllersInfo; "err": text };
 
 type TransferResult = variant { "Ok": nat64; "Err": TransferError };
 
@@ -135,7 +147,7 @@ type TransferError = variant { "BadFee": record { "expected_fee": Tokens; }; "In
 type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
 
 service: (vec principal, nat8) -> {
-    "get_cycle_stats": () -> (CycleStats) query;
+    "get_cycle_stats_info": () -> (CycleStatsInfo) query;
     "getSigners": () -> (vec principal) query;
     "getSignerProposals": () -> (vec SignerProposal) query;
     "getThreshold": () -> (nat8) query;
@@ -144,8 +156,7 @@ service: (vec principal, nat8) -> {
     "getTransferProposals": () -> (vec TransferProposal) query;
     "getCanisterPrincipal": () -> (text) query;
     "getCanisterAddress": () -> (text) query;
-    "getCanisterCycles": () -> (nat64) query;
-    "snapshot_cycles": () -> ();
+    "snapshot_cycles": () -> (DefaultResult);
     "proposeSigner": (text, principal, bool) -> (DefaultResult);
     "voteOnSignerProposal": (text, bool) -> (VoteOnProposalResult);
     "proposeThreshold": (text, nat8) -> (DefaultResult);
@@ -153,4 +164,5 @@ service: (vec principal, nat8) -> {
     "proposeTransfer": (text, text, nat64) -> (DefaultResult);
     "voteOnTransferProposal": (text, bool) -> (VoteOnProposalResult);
     "getVaultBalance": () -> (VaultBalanceResult);
+    "get_controllers_info": () -> (ControllersInfoResult);
 }

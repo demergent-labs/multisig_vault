@@ -11,6 +11,12 @@ export interface CanisterStatusResult {
   'settings' : DefiniteCanisterSettings,
   'module_hash' : [] | [Array<number>],
 }
+export interface ControllersInfo {
+  'frontend' : Array<Principal>,
+  'backend' : Array<Principal>,
+}
+export type ControllersInfoResult = { 'ok' : ControllersInfo } |
+  { 'err' : string };
 export interface CycleSnapshot {
   'cycles_remaining' : bigint,
   'timestamp' : bigint,
@@ -26,6 +32,10 @@ export interface CycleStats {
   'cycles_per_year' : bigint,
   'cycle_snapshots' : Array<CycleSnapshot>,
   'cycle_time_remaining' : bigint,
+}
+export interface CycleStatsInfo {
+  'frontend' : CycleStats,
+  'backend' : CycleStats,
 }
 export type DefaultResult = { 'ok' : boolean } |
   { 'err' : string };
@@ -106,7 +116,6 @@ export type VoteOnProposalResult = { 'ok' : VoteOnProposalAction } |
   { 'err' : string };
 export interface _SERVICE {
   'getCanisterAddress' : () => Promise<string>,
-  'getCanisterCycles' : () => Promise<bigint>,
   'getCanisterPrincipal' : () => Promise<string>,
   'getSignerProposals' : () => Promise<Array<SignerProposal>>,
   'getSigners' : () => Promise<Array<Principal>>,
@@ -115,7 +124,8 @@ export interface _SERVICE {
   'getTransferProposals' : () => Promise<Array<TransferProposal>>,
   'getTransfers' : () => Promise<Array<Transfer>>,
   'getVaultBalance' : () => Promise<VaultBalanceResult>,
-  'get_cycle_stats' : () => Promise<CycleStats>,
+  'get_controllers_info' : () => Promise<ControllersInfoResult>,
+  'get_cycle_stats_info' : () => Promise<CycleStatsInfo>,
   'proposeSigner' : (
       arg_0: string,
       arg_1: Principal,
@@ -125,7 +135,7 @@ export interface _SERVICE {
   'proposeTransfer' : (arg_0: string, arg_1: string, arg_2: bigint) => Promise<
       DefaultResult
     >,
-  'snapshot_cycles' : () => Promise<undefined>,
+  'snapshot_cycles' : () => Promise<DefaultResult>,
   'voteOnSignerProposal' : (arg_0: string, arg_1: boolean) => Promise<
       VoteOnProposalResult
     >,

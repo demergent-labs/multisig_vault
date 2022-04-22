@@ -1,10 +1,15 @@
 import {
+    CanisterResult,
     ic,
     nat64,
     Query,
-    Update
+    UpdateAsync
 } from 'azle';
-import { state } from './backend';
+import { CanisterStatusResult } from 'azle/canisters/management';
+import {
+    ManagementCanister,
+    state
+} from './backend';
 import {
     DECIMALS,
     NANOS_PER_YEAR,
@@ -16,40 +21,62 @@ import {
     NANOS_PER_SECOND,
     CYCLE_SNAPSHOTS_LENGTH
 } from './constants';
+import { process } from './process_polyfill';
 import {
     CycleSnapshot,
-    CycleStats
+    CycleStats,
+    CycleStatsInfo,
+    DefaultResult
 } from './types';
 
-export function get_cycle_stats(): Query<CycleStats> {
-    return state.cycle_stats;
+export function get_cycle_stats_info(): Query<CycleStatsInfo> {
+    return {
+        frontend: state.frontend_cycle_stats,
+        backend: state.backend_cycle_stats
+    };
 }
 
-export function snapshot_cycles(): Update<void> {
-    const updated_cycle_stats = calculate_updated_cycle_stats(state.cycle_stats);
+export function* snapshot_cycles(): UpdateAsync<DefaultResult> {
+    const canister_result: CanisterResult<CanisterStatusResult> = yield ManagementCanister.canister_status({
+        canister_id: process.env.FRONTEND_CANISTER_ID
+    });
 
-    state.cycle_stats = updated_cycle_stats;
+    if (canister_result.ok === undefined) {
+        return {
+            err: canister_result.err
+        };
+    }
+
+    const canisterStatusResult = canister_result.ok;
+
+    const frontend_cycle_stats = calculate_updated_cycle_stats(
+        state.frontend_cycle_stats,
+        canisterStatusResult.cycles
+    );
+    const backend_cycle_stats = calculate_updated_cycle_stats(
+        state.backend_cycle_stats,
+        ic.canisterBalance()
+    );
+
+    state.frontend_cycle_stats = frontend_cycle_stats;
+    state.backend_cycle_stats = backend_cycle_stats;
+
+    return {
+        ok: true
+    };
 }
 
-export function calculate_updated_cycle_stats(current_cycle_stats: CycleStats): CycleStats {
-    const cycles_remaining = ic.canisterBalance();
-    // const cycles_remaining = 3798566558220n;
-
-    ic.print('cycles_remaining', cycles_remaining);
-
+function calculate_updated_cycle_stats(
+    current_cycle_stats: CycleStats,
+    cycles_remaining: nat64
+): CycleStats {
     const cycle_snapshots = sort_cycle_snapshots(calculate_cycle_snapshots(
         cycles_remaining,
         current_cycle_stats.cycle_snapshots
     ));
-    // const cycle_snapshots = current_cycle_stats.cycle_snapshots;
     const cycles_per_nanosecond = calculate_cycles_per_nanosecond(cycle_snapshots);
 
-    ic.print('cycles_per_nanosecond', cycles_per_nanosecond);
-
     const cycle_time_remaining = cycles_per_nanosecond === 0n ? 0n : (cycles_remaining * BigInt(10**DECIMALS)) / cycles_per_nanosecond;
-
-    ic.print('cycle_time_remaining', cycle_time_remaining);
-    ic.print('\n\n');
 
     return {
         cycles_remaining,
@@ -117,9 +144,6 @@ function calculate_cycles_per_nanosecond(cycle_snapshots: CycleSnapshot[]): nat6
             const cycle_delta = cycle_snapshot.cycles_remaining - next_cycle_snapshot.cycles_remaining;
             const time_delta = cycle_snapshot.timestamp - next_cycle_snapshot.timestamp;
 
-            ic.print('cycle_delta', cycle_delta);
-            ic.print('time_delta', time_delta);
-
             if (cycle_delta >= 0) {
                 return {
                     weight: 0n,
@@ -138,17 +162,11 @@ function calculate_cycles_per_nanosecond(cycle_snapshots: CycleSnapshot[]): nat6
         return result + delta.weighted_value;
     }, 0n);
 
-    ic.print('sum_of_weighted_values', sum_of_weighted_values);
-
     const sum_of_weights = deltas.reduce((result, delta) => {
         return result + delta.weight;
     }, 0n);
 
-    ic.print('sum_of_weights', sum_of_weights);
-
     const average = sum_of_weights === 0n ? 0n : (sum_of_weighted_values * BigInt(10**DECIMALS)) / sum_of_weights;
-
-    ic.print('average', average);
 
     return average;
 }

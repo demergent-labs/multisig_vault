@@ -10,11 +10,12 @@ import {
 import { createActor } from '../dfx_generated/backend';
 import { ActorSubclass } from '@dfinity/agent';
 import {
-    CycleStats,
+    ControllersInfo,
     ThresholdProposal,
     SignerProposal,
     TransferProposal,
-    _SERVICE
+    _SERVICE,
+    CycleStatsInfo
 } from '../dfx_generated/backend/backend.did';
 import { Principal } from '@dfinity/principal';
 import { AuthClient } from '@dfinity/auth-client';
@@ -42,7 +43,8 @@ import '@ui5/webcomponents-fiori/dist/Bar.js';
 
 type State = {
     backend: ActorSubclass<_SERVICE> | null;
-    cycles_stats: CycleStats | null;
+    cycles_stats_info: CycleStatsInfo | null;
+    controllers_info: ControllersInfo | null;
     canister_principal: {
         loading: boolean;
         value: string;
@@ -89,14 +91,13 @@ type State = {
     loadingSignerProposals: boolean;
     loadingSigners: boolean;
     loadingThresholdProposals: boolean;
-    showIdentifiersTable: boolean;
-    showCyclesTable: boolean;
     loadingCycles: boolean;
 };
 
 const InitialState: State = {
     backend: null,
-    cycles_stats: null,
+    cycles_stats_info: null,
+    controllers_info: null,
     canister_principal: {
         loading: true,
         value: ''
@@ -138,8 +139,6 @@ const InitialState: State = {
     loadingSignerProposals: false,
     loadingSigners: false,
     loadingThresholdProposals: false,
-    showIdentifiersTable: true,
-    showCyclesTable: false,
     loadingCycles: false
 };
 
@@ -200,6 +199,9 @@ class DemergApp extends HTMLElement {
                         value: balance.ok
                     };
                 }
+                else {
+                    this.handleError((balance as any).err);
+                }
             }),
             this.store.backend.getCanisterAddress().then((address) => {
                 this.store.canister_address = {
@@ -219,6 +221,14 @@ class DemergApp extends HTMLElement {
                     value: threshold
                 }
             }),
+            this.store.backend.get_controllers_info().then((controllers_info_result) => {
+                if ('ok' in controllers_info_result) {
+                    this.store.controllers_info = controllers_info_result.ok;
+                }
+                else {
+                    this.handleError((controllers_info_result as any).err);
+                }
+            }),
             this.loadSigners(),
             this.loadTransferProposals(),
             this.loadSignerProposals(),
@@ -235,11 +245,12 @@ class DemergApp extends HTMLElement {
             return;
         }
         
-        const cycleStats = await this.store.backend.get_cycle_stats();
+        await this.snapshotCycles();
+        const cycleStatsInfo = await this.store.backend.get_cycle_stats_info();
 
-        this.store.cycles_stats = cycleStats;
+        this.store.cycles_stats_info = cycleStatsInfo;
 
-        console.log('this.store.cycles_stats.cycle_snapshots', this.store.cycles_stats.cycle_snapshots);
+        console.log('this.store.cycles_stats_info', this.store.cycles_stats_info);
     }
 
     async loadTransferProposals() {
@@ -524,7 +535,11 @@ class DemergApp extends HTMLElement {
             return;
         }
 
-        await this.store.backend.snapshot_cycles();
+        const result = await this.store.backend.snapshot_cycles();
+
+        if (result.hasOwnProperty('err')) {
+            this.handleError((result as any).err);
+        }
     }
 
     handleError(error: any) {
@@ -548,19 +563,27 @@ class DemergApp extends HTMLElement {
 
         const canisterBalanceText = state.balance.loading === true ? 'Loading...' : `${Number(state.balance.value * 10000n / BigInt(10**8)) / 10000} ICP available`;
         
-        const myPrincipalText = state.identity === null ? 'Loading...' : state.identity.getPrincipal().toString();
-        const canisterPrincipalText = state.canister_principal.loading === true ? 'Loading...' : state.canister_principal.value;
         const canisterAddressText = state.canister_address.loading === true ? 'Loading...' : state.canister_address.value;
 
-        const cycles_remaining = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_remaining);
-        const cycle_time_remaining = state.cycles_stats === null ? 'Loading...' : nanoseconds_to_time_remaining_string(state.cycles_stats.cycle_time_remaining);
-        const cycles_per_year = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_year);
-        const cycles_per_month = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_month);
-        const cycles_per_week = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_week);
-        const cycles_per_day = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_day);
-        const cycles_per_hour = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_hour);
-        const cycles_per_min = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_min);
-        const cycles_per_sec = state.cycles_stats === null ? 'Loading...' : separate_cycles(state.cycles_stats.cycles_per_sec);
+        const frontend_cycles_remaining = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_remaining);
+        const frontend_cycle_time_remaining = state.cycles_stats_info === null ? 'Loading...' : nanoseconds_to_time_remaining_string(state.cycles_stats_info.frontend.cycle_time_remaining);
+        const frontend_cycles_per_year = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_year);
+        const frontend_cycles_per_month = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_month);
+        const frontend_cycles_per_week = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_week);
+        const frontend_cycles_per_day = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_day);
+        const frontend_cycles_per_hour = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_hour);
+        const frontend_cycles_per_min = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_min);
+        const frontend_cycles_per_sec = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_sec);
+
+        const backend_cycles_remaining = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_remaining);
+        const backend_cycle_time_remaining = state.cycles_stats_info === null ? 'Loading...' : nanoseconds_to_time_remaining_string(state.cycles_stats_info.backend.cycle_time_remaining);
+        const backend_cycles_per_year = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_year);
+        const backend_cycles_per_month = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_month);
+        const backend_cycles_per_week = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_week);
+        const backend_cycles_per_day = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_day);
+        const backend_cycles_per_hour = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_hour);
+        const backend_cycles_per_min = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_min);
+        const backend_cycles_per_sec = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_sec);
 
         return html`
             <style>
@@ -865,6 +888,233 @@ class DemergApp extends HTMLElement {
                         </div>
                     </ui5-dialog>
                 ` : ''}
+
+                <ui5-card class="proposals-container">
+                    <ui5-card-header title-text="Threshold" subtitle-text="${thresholdSubtitleText}">
+                        <div class="card-header-action-container" slot="action">
+                            <ui5-button
+                                class="create-proposal-button"
+                                design="Emphasized"
+                                @click=${() => this.store.hideCreateThresholdProposal = false}
+                            >
+                                Create Proposal
+                            </ui5-button>
+
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${state.loadingThresholdProposals}
+                            >
+                                <ui5-button
+                                    ?hidden=${!state.hideOpenThresholdProposals}
+                                    @click=${async () => {
+                                        this.store.hideOpenThresholdProposals = false;
+                                        
+                                        
+                                        this.store.loadingThresholdProposals = true;
+                                        await this.loadThresholdProposals();
+                                        this.store.loadingThresholdProposals = false;
+                                    }}
+                                >
+                                    View Open Proposals
+                                </ui5-button>
+                                
+                                <ui5-button
+                                    ?hidden=${state.hideOpenThresholdProposals}
+                                    @click=${async () => {
+                                        this.store.hideOpenThresholdProposals = true;
+
+                                        this.store.loadingThresholdProposals = true;
+                                        await this.loadThresholdProposals();
+                                        this.store.loadingThresholdProposals = false;
+                                    }}
+                                >
+                                    View Closed Proposals
+                                </ui5-button>
+                            </ui5-busy-indicator>
+
+                        </div>
+                    </ui5-card-header>
+    
+                    <ui5-table
+                        class="proposals-table"
+                        no-data-text="No ${state.hideOpenThresholdProposals === true ? 'closed' : 'open'} proposals"
+                    >
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>ID</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Created At</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Proposer</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Description</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>New Threshold</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Votes For</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Votes Against</ui5-label>
+                        </ui5-table-column>
+    
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Status</ui5-label>
+                        </ui5-table-column>
+    
+                        ${state.hideOpenThresholdProposals === false ? html`
+                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
+                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
+                        ` : ''}
+    
+                        ${state.thresholdProposals.filter((thresholdProposal) => {
+                            const open = thresholdProposal.adopted === false && thresholdProposal.rejected === false;
+                            const hidden = (open && state.hideOpenThresholdProposals === true) || (!open && state.hideOpenThresholdProposals === false);
+    
+                            return hidden === false;
+                        }).map((thresholdProposal) => {
+                            const idTrimmed = `${thresholdProposal.id.slice(0, 5)}...${thresholdProposal.id.slice(thresholdProposal.id.length - 5, thresholdProposal.id.length)}`;
+                            const proposerTrimmed = `${thresholdProposal.proposer.toString().slice(0, 5)}...${thresholdProposal.proposer.toString().slice(thresholdProposal.proposer.toString().length - 5, thresholdProposal.proposer.toString().length)}`;
+    
+                            const votesFor = thresholdProposal.votes.filter((vote) => vote.adopt === true).length;
+                            const votesAgainst = thresholdProposal.votes.filter((vote) => vote.adopt === false).length;
+    
+                            const status = thresholdProposal.adopted === true ?
+                                `Adopted ${new Date(Number((thresholdProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : thresholdProposal.rejected === true ?
+                                    `Rejected ${new Date(Number((thresholdProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
+    
+                            return html`
+                                <ui5-table-row>
+                                    <ui5-table-cell>
+                                        <ui5-label title="${thresholdProposal.id}">${idTrimmed}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${new Date(Number(thresholdProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label title="${thresholdProposal.proposer}">${proposerTrimmed}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${thresholdProposal.description}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${thresholdProposal.threshold}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${votesFor}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${votesAgainst}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    <ui5-table-cell>
+                                        <ui5-label>${status}</ui5-label>
+                                    </ui5-table-cell>
+    
+                                    ${state.hideOpenThresholdProposals === false ? html`
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[thresholdProposal.id]?.adopting}
+                                            >
+                                                <ui5-button
+                                                    design="Positive"
+                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, true)}
+                                                >
+                                                    Adopt
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+    
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[thresholdProposal.id]?.rejecting}
+                                            >
+                                                <ui5-button
+                                                    design="Negative"
+                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, false)}
+                                                >
+                                                    Reject
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+                                    ` : ''}
+                                </ui5-table-row>
+                            `;
+                        })}
+                    </ui5-table>
+                </ui5-card>
+    
+                ${state.hideCreateThresholdProposal === false ? html`
+                    <ui5-dialog
+                        header-text="Threshold Proposal"
+                        .open=${true}
+                    >
+                        <section class="demerg-input-form">
+                            <div class="demerg-input">
+                                <ui5-label for="input-threshold-proposal-description" required>Description:</ui5-label>
+                                <ui5-input id="input-threshold-proposal-description"></ui5-input>
+                            </div>
+    
+                            <div class="demerg-input">
+                                <ui5-label for="input-threshold-proposal-threshold" required>Threshold:</ui5-label>
+                                <ui5-input id="input-threshold-proposal-threshold" type="Number"></ui5-input>
+                                <!-- <input
+                                    id="input-threshold-proposal-threshold"
+                                    class="number-input"
+                                    type="number"
+                                    min="1"
+                                    max="${state.signers.value.length}"
+                                    value="${state.threshold.value}"
+                                > -->
+                                <!-- <ui5-slider
+                                    id="input-threshold-proposal-threshold"
+                                    min="1"
+                                    max="${state.signers.value.length}"
+                                    step="1"
+                                    value="${state.threshold.value}"
+                                    show-tooltip
+                                    label-interval="1"
+                                    show-tickmarks
+                                ></ui5-slider> -->
+                            </div>
+                        </section>
+    
+                        <div slot="footer" class="dialog-footer">
+                            <div class="dialog-footer-space"></div>
+                            <ui5-busy-indicator
+                                size="Small"
+                                .active=${state.creatingThresholdProposal}
+                            >
+                                <ui5-button
+                                    class="dialog-footer-main-button"
+                                    design="Emphasized"
+                                    @click=${() => this.handleCreateThresholdProposalClick()}
+                                >
+                                    Create
+                                </ui5-button>
+                            </ui5-busy-indicator>
+
+                            <ui5-button @click=${() => this.store.hideCreateThresholdProposal = true}>Cancel</ui5-button>
+                        </div>
+                    </ui5-dialog>
+                ` : ''}
     
                 <ui5-card class="proposals-container">
                     <ui5-card-header title-text="Signers">
@@ -1129,233 +1379,6 @@ class DemergApp extends HTMLElement {
                 ` : ''}
 
                 <ui5-card class="proposals-container">
-                    <ui5-card-header title-text="Threshold" subtitle-text="${thresholdSubtitleText}">
-                        <div class="card-header-action-container" slot="action">
-                            <ui5-button
-                                class="create-proposal-button"
-                                design="Emphasized"
-                                @click=${() => this.store.hideCreateThresholdProposal = false}
-                            >
-                                Create Proposal
-                            </ui5-button>
-
-                            <ui5-busy-indicator
-                                size="Small"
-                                .active=${state.loadingThresholdProposals}
-                            >
-                                <ui5-button
-                                    ?hidden=${!state.hideOpenThresholdProposals}
-                                    @click=${async () => {
-                                        this.store.hideOpenThresholdProposals = false;
-                                        
-                                        
-                                        this.store.loadingThresholdProposals = true;
-                                        await this.loadThresholdProposals();
-                                        this.store.loadingThresholdProposals = false;
-                                    }}
-                                >
-                                    View Open Proposals
-                                </ui5-button>
-                                
-                                <ui5-button
-                                    ?hidden=${state.hideOpenThresholdProposals}
-                                    @click=${async () => {
-                                        this.store.hideOpenThresholdProposals = true;
-
-                                        this.store.loadingThresholdProposals = true;
-                                        await this.loadThresholdProposals();
-                                        this.store.loadingThresholdProposals = false;
-                                    }}
-                                >
-                                    View Closed Proposals
-                                </ui5-button>
-                            </ui5-busy-indicator>
-
-                        </div>
-                    </ui5-card-header>
-    
-                    <ui5-table
-                        class="proposals-table"
-                        no-data-text="No ${state.hideOpenThresholdProposals === true ? 'closed' : 'open'} proposals"
-                    >
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>ID</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Created At</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Proposer</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Description</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>New Threshold</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Votes For</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Votes Against</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Status</ui5-label>
-                        </ui5-table-column>
-    
-                        ${state.hideOpenThresholdProposals === false ? html`
-                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
-                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
-                        ` : ''}
-    
-                        ${state.thresholdProposals.filter((thresholdProposal) => {
-                            const open = thresholdProposal.adopted === false && thresholdProposal.rejected === false;
-                            const hidden = (open && state.hideOpenThresholdProposals === true) || (!open && state.hideOpenThresholdProposals === false);
-    
-                            return hidden === false;
-                        }).map((thresholdProposal) => {
-                            const idTrimmed = `${thresholdProposal.id.slice(0, 5)}...${thresholdProposal.id.slice(thresholdProposal.id.length - 5, thresholdProposal.id.length)}`;
-                            const proposerTrimmed = `${thresholdProposal.proposer.toString().slice(0, 5)}...${thresholdProposal.proposer.toString().slice(thresholdProposal.proposer.toString().length - 5, thresholdProposal.proposer.toString().length)}`;
-    
-                            const votesFor = thresholdProposal.votes.filter((vote) => vote.adopt === true).length;
-                            const votesAgainst = thresholdProposal.votes.filter((vote) => vote.adopt === false).length;
-    
-                            const status = thresholdProposal.adopted === true ?
-                                `Adopted ${new Date(Number((thresholdProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : thresholdProposal.rejected === true ?
-                                    `Rejected ${new Date(Number((thresholdProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
-    
-                            return html`
-                                <ui5-table-row>
-                                    <ui5-table-cell>
-                                        <ui5-label title="${thresholdProposal.id}">${idTrimmed}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${new Date(Number(thresholdProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label title="${thresholdProposal.proposer}">${proposerTrimmed}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${thresholdProposal.description}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${thresholdProposal.threshold}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${votesFor}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${votesAgainst}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${status}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    ${state.hideOpenThresholdProposals === false ? html`
-                                        <ui5-table-cell>
-                                            <ui5-busy-indicator
-                                                size="Small"
-                                                .active=${state.votingOnProposals[thresholdProposal.id]?.adopting}
-                                            >
-                                                <ui5-button
-                                                    design="Positive"
-                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, true)}
-                                                >
-                                                    Adopt
-                                                </ui5-button>
-                                            </ui5-busy-indicator>
-                                        </ui5-table-cell>
-    
-                                        <ui5-table-cell>
-                                            <ui5-busy-indicator
-                                                size="Small"
-                                                .active=${state.votingOnProposals[thresholdProposal.id]?.rejecting}
-                                            >
-                                                <ui5-button
-                                                    design="Negative"
-                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, false)}
-                                                >
-                                                    Reject
-                                                </ui5-button>
-                                            </ui5-busy-indicator>
-                                        </ui5-table-cell>
-                                    ` : ''}
-                                </ui5-table-row>
-                            `;
-                        })}
-                    </ui5-table>
-                </ui5-card>
-    
-                ${state.hideCreateThresholdProposal === false ? html`
-                    <ui5-dialog
-                        header-text="Threshold Proposal"
-                        .open=${true}
-                    >
-                        <section class="demerg-input-form">
-                            <div class="demerg-input">
-                                <ui5-label for="input-threshold-proposal-description" required>Description:</ui5-label>
-                                <ui5-input id="input-threshold-proposal-description"></ui5-input>
-                            </div>
-    
-                            <div class="demerg-input">
-                                <ui5-label for="input-threshold-proposal-threshold" required>Threshold:</ui5-label>
-                                <ui5-input id="input-threshold-proposal-threshold" type="Number"></ui5-input>
-                                <!-- <input
-                                    id="input-threshold-proposal-threshold"
-                                    class="number-input"
-                                    type="number"
-                                    min="1"
-                                    max="${state.signers.value.length}"
-                                    value="${state.threshold.value}"
-                                > -->
-                                <!-- <ui5-slider
-                                    id="input-threshold-proposal-threshold"
-                                    min="1"
-                                    max="${state.signers.value.length}"
-                                    step="1"
-                                    value="${state.threshold.value}"
-                                    show-tooltip
-                                    label-interval="1"
-                                    show-tickmarks
-                                ></ui5-slider> -->
-                            </div>
-                        </section>
-    
-                        <div slot="footer" class="dialog-footer">
-                            <div class="dialog-footer-space"></div>
-                            <ui5-busy-indicator
-                                size="Small"
-                                .active=${state.creatingThresholdProposal}
-                            >
-                                <ui5-button
-                                    class="dialog-footer-main-button"
-                                    design="Emphasized"
-                                    @click=${() => this.handleCreateThresholdProposalClick()}
-                                >
-                                    Create
-                                </ui5-button>
-                            </ui5-busy-indicator>
-
-                            <ui5-button @click=${() => this.store.hideCreateThresholdProposal = true}>Cancel</ui5-button>
-                        </div>
-                    </ui5-dialog>
-                ` : ''}
-
-                <ui5-card class="proposals-container">
                     <ui5-card-header title-text="Stats and Info">
                         <div class="card-header-action-container" slot="action">
                             <ui5-busy-indicator
@@ -1363,78 +1386,29 @@ class DemergApp extends HTMLElement {
                                 .active=${state.loadingCycles}
                             >
                                 <ui5-button
-                                    class="create-proposal-button"
                                     design="Emphasized"
+                                    class="create-proposal-button"
                                     @click=${async () => {
                                         this.store.loadingCycles =  true;
-                                        
-                                        await this.snapshotCycles();
                                         await this.loadCycleStats();
-
                                         this.store.loadingCycles = false;
                                     }}
                                 >
-                                    Snapshot Cycles
+                                    Recalculate
                                 </ui5-button>
                             </ui5-busy-indicator>
-
-                            <ui5-button
-                                class="create-proposal-button"
-                                @click=${() => {
-                                    this.store.showIdentifiersTable = true;
-                                    this.store.showCyclesTable = false;
-                                }}
-                            >
-                                Identifiers
-                            </ui5-button>
-
-                            <ui5-button
-                                class="create-proposal-button"
-                                @click=${() => {
-                                    this.store.showCyclesTable = true;
-                                    this.store.showIdentifiersTable = false;
-                                }}
-                            >
-                                Cycles
-                            </ui5-button>
                         </div>
                     </ui5-card-header>
-    
-                    <ui5-table
-                        ?hidden=${!state.showIdentifiersTable}
-                        class="proposals-table"
-                    >
+
+                    <ui5-table class="proposals-table">
                         <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>My Principal</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Canister Principal</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Canister ICP Address</ui5-label>
+                            <ui5-label>Canister Name</ui5-label>
                         </ui5-table-column>
 
-                        <ui5-table-row>
-                            <ui5-table-cell>
-                                <ui5-label>${myPrincipalText}</ui5-label>
-                            </ui5-table-cell>
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Principal</ui5-label>
+                        </ui5-table-column>
 
-                            <ui5-table-cell>
-                                <ui5-label>${canisterPrincipalText}</ui5-label>
-                            </ui5-table-cell>
-
-                            <ui5-table-cell>
-                                <ui5-label>${canisterAddressText}</ui5-label>
-                            </ui5-table-cell>
-                        </ui5-table-row>
-                    </ui5-table>
-
-                    <ui5-table
-                        ?hidden=${!state.showCyclesTable}
-                        class="proposals-table"
-                    >
                         <ui5-table-column slot="columns" demand-popin>
                             <ui5-label>Cycles Remaining</ui5-label>
                         </ui5-table-column>
@@ -1471,41 +1445,119 @@ class DemergApp extends HTMLElement {
                             <ui5-label>Cycles/sec</ui5-label>
                         </ui5-table-column>
 
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>ICP Address</ui5-label>
+                        </ui5-table-column>
+
+                        <ui5-table-column slot="columns" demand-popin>
+                            <ui5-label>Controllers</ui5-label>
+                        </ui5-table-column>
+
                         <ui5-table-row>
                             <ui5-table-cell>
-                                <ui5-label>${cycles_remaining}</ui5-label>
+                                <ui5-label>frontend</ui5-label>
+                            </ui5-table-cell>
+
+                            <ui5-table-cell>
+                                <ui5-label>${window.process.env.FRONTEND_CANISTER_ID}</ui5-label>
+                            </ui5-table-cell>
+
+                            <ui5-table-cell>
+                                <ui5-label>${frontend_cycles_remaining}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>${cycle_time_remaining}</ui5-label>
+                                <ui5-label>${frontend_cycle_time_remaining}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>${cycles_per_year}</ui5-label>
+                                <ui5-label>${frontend_cycles_per_year}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>${cycles_per_month}</ui5-label>
+                                <ui5-label>${frontend_cycles_per_month}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>${cycles_per_week}</ui5-label>
+                                <ui5-label>${frontend_cycles_per_week}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>${cycles_per_day}</ui5-label>
+                                <ui5-label>${frontend_cycles_per_day}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>${cycles_per_hour}</ui5-label>
+                                <ui5-label>${frontend_cycles_per_hour}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>${cycles_per_min}</ui5-label>
+                                <ui5-label>${frontend_cycles_per_min}</ui5-label>
                             </ui5-table-cell>
     
                             <ui5-table-cell>
-                                <ui5-label>${cycles_per_sec}</ui5-label>
+                                <ui5-label>${frontend_cycles_per_sec}</ui5-label>
+                            </ui5-table-cell>
+
+                            <ui5-table-cell>
+                                <ui5-label>N/A</ui5-label>
+                            </ui5-table-cell>
+
+                            <ui5-table-cell>
+                                <ui5-label>${state.controllers_info === null ? 'Loading...' : state.controllers_info.frontend.length === 0 ? 'None' : state.controllers_info.frontend.join(' / ')}</ui5-label>
+                            </ui5-table-cell>
+                        </ui5-table-row>
+
+                        <ui5-table-row>
+                            <ui5-table-cell>
+                                <ui5-label>backend</ui5-label>
+                            </ui5-table-cell>
+
+                            <ui5-table-cell>
+                                <ui5-label>${window.process.env.BACKEND_CANISTER_ID}</ui5-label>
+                            </ui5-table-cell>
+
+                            <ui5-table-cell>
+                                <ui5-label>${backend_cycles_remaining}</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>${backend_cycle_time_remaining}</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>${backend_cycles_per_year}</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>${backend_cycles_per_month}</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>${backend_cycles_per_week}</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>${backend_cycles_per_day}</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>${backend_cycles_per_hour}</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>${backend_cycles_per_min}</ui5-label>
+                            </ui5-table-cell>
+    
+                            <ui5-table-cell>
+                                <ui5-label>${backend_cycles_per_sec}</ui5-label>
+                            </ui5-table-cell>
+
+                            <ui5-table-cell>
+                                <ui5-label>${canisterAddressText}</ui5-label>
+                            </ui5-table-cell>
+
+                            <ui5-table-cell>
+                                <ui5-label>${state.controllers_info === null ? 'Loading...' : state.controllers_info.backend.length === 0 ? 'None' : state.controllers_info.backend.join(' / ')}</ui5-label>
                             </ui5-table-cell>
                         </ui5-table-row>
                     </ui5-table>
@@ -1565,6 +1617,7 @@ function separate_cycles(cycles: string | number | bigint) {
         .join('');
 }
 
+// TODO let's double-check this math
 function nanoseconds_to_time_remaining_string(nanoseconds: nat64): string {
     const NANOS_PER_SECOND = 1_000_000_000n;
     const NANOS_PER_MINUTE = 60n * NANOS_PER_SECOND;
@@ -1573,22 +1626,30 @@ function nanoseconds_to_time_remaining_string(nanoseconds: nat64): string {
     const NANOS_PER_WEEK = 7n * NANOS_PER_DAY;
     const NANOS_PER_MONTH = 4n * NANOS_PER_WEEK;
     const NANOS_PER_YEAR = 12n * NANOS_PER_MONTH;
- 
-    const years = nanoseconds / NANOS_PER_YEAR;
-    const months = nanoseconds / NANOS_PER_MONTH;
-    const weeks = nanoseconds / NANOS_PER_WEEK;
-    const days = nanoseconds / NANOS_PER_DAY;
-    const hours = nanoseconds / NANOS_PER_HOUR;
-    const minutes = nanoseconds / NANOS_PER_MINUTE;
-    const seconds = nanoseconds / NANOS_PER_SECOND;
 
-    const years_string = years === 0n ? [] : [`${years} ${years === 1n ? 'year' : 'years'}`];
-    const months_string = months === 0n ? [] : [`${months} ${months === 1n ? 'month' : 'months'}`];
-    const weeks_string = weeks === 0n ? [] : [`${weeks} ${weeks === 1n ? 'week' : 'weeks'}`];
-    const days_string = days === 0n ? [] : [`${days} ${days === 1n ? 'day' : 'days'}`];
-    const hours_string = hours === 0n ? [] : [`${hours} ${hours === 1n ? 'hour' : 'hours'}`];
-    const minutes_string = minutes === 0n ? [] : [`${minutes} ${minutes === 1n ? 'minute' : 'minutes'}`];
-    const seconds_string = seconds === 0n ? [] : [`${seconds} ${seconds === 1n ? 'second' : 'seconds'}`];
+    const total_years = nanoseconds / NANOS_PER_YEAR;
+    const total_months = nanoseconds / NANOS_PER_MONTH;
+    const total_weeks = nanoseconds / NANOS_PER_WEEK;
+    const total_days = nanoseconds / NANOS_PER_DAY;
+    const total_hours = nanoseconds / NANOS_PER_HOUR;
+    const total_minutes = nanoseconds / NANOS_PER_MINUTE;
+    const total_seconds = nanoseconds / NANOS_PER_SECOND;
+
+    const remaining_years = total_years;
+    const remaining_months = total_years === 0n ? total_months : (nanoseconds % NANOS_PER_YEAR) / NANOS_PER_MONTH;
+    const remaining_weeks = total_months === 0n ? total_weeks : (nanoseconds % NANOS_PER_MONTH) / NANOS_PER_WEEK;
+    const remaining_days = total_weeks === 0n ? total_days : (nanoseconds % NANOS_PER_WEEK) / NANOS_PER_DAY;
+    const remaining_hours = total_days === 0n ? total_hours : (nanoseconds % NANOS_PER_DAY) / NANOS_PER_HOUR;
+    const remaining_minutes = total_hours === 0n ? total_minutes : (nanoseconds % NANOS_PER_HOUR) / NANOS_PER_MINUTE;
+    const remaining_seconds = total_minutes === 0n ? total_seconds : (nanoseconds % NANOS_PER_MINUTE) / NANOS_PER_SECOND;
+
+    const years_string = remaining_years === 0n ? [] : [`${remaining_years} ${remaining_years === 1n ? 'year' : 'years'}`];
+    const months_string = remaining_months === 0n ? [] : [`${remaining_months} ${remaining_months === 1n ? 'month' : 'months'}`];
+    const weeks_string = remaining_weeks === 0n ? [] : [`${remaining_weeks} ${remaining_weeks === 1n ? 'week' : 'weeks'}`];
+    const days_string = remaining_days === 0n ? [] : [`${remaining_days} ${remaining_days === 1n ? 'day' : 'days'}`];
+    const hours_string = remaining_hours === 0n ? [] : [`${remaining_hours} ${remaining_hours === 1n ? 'hour' : 'hours'}`];
+    const minutes_string = remaining_minutes === 0n ? [] : [`${remaining_minutes} ${remaining_minutes === 1n ? 'minute' : 'minutes'}`];
+    const seconds_string = remaining_seconds === 0n ? [] : [`${remaining_seconds} ${remaining_seconds === 1n ? 'second' : 'seconds'}`];
 
     return [
         ...years_string,
