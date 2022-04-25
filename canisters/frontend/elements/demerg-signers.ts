@@ -217,55 +217,7 @@ class DemergSigners extends HTMLElement {
 
     render(state: State) {
         return html`
-            <style>
-                .proposals-table {
-                    overflow-x: scroll;
-                }
-
-                .demerg-input-form {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    padding: .5rem;
-                    box-sizing: border-box;
-                    width: 100%;
-                }
-
-                .demerg-input {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    padding-bottom: .75rem;
-                    box-sizing: border-box;
-                    width: 100%;
-                }
-
-                .demerg-input-and-label {
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .dialog-footer {
-                    display: flex;
-                    padding: .5rem;
-                }
-
-                .dialog-footer-main-button {
-                    margin-right: .25rem;
-                }
-
-                .dialog-footer-space {
-                    flex: 1;
-                }
-
-                .card-header-action-container {
-                    display: flex;
-                }
-
-                .table-main-button {
-                    margin-right: .25rem;
-                }
-            </style>
+            <link rel="stylesheet" href="/index.css">
 
             <ui5-card>
                 <ui5-card-header title-text="Signers">

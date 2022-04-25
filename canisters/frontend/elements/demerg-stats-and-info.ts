@@ -202,15 +202,7 @@ class DemergStatsAndInfo extends HTMLElement {
         const backend_cycles_per_sec = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_sec);
 
         return html`
-            <style>
-                .proposals-table {
-                    overflow-x: scroll;
-                }
-                
-                .table-main-button {
-                    margin-right: .25rem;
-                }
-            </style>
+            <link rel="stylesheet" href="/index.css">
 
             <ui5-card>
                 <ui5-card-header title-text="Stats and Info">

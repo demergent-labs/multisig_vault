@@ -1,5 +1,3 @@
-// TODO once everything is componentized, figure out how general we want to make everything
-
 import {
     html,
     render as litRender
