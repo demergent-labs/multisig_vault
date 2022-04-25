@@ -41,7 +41,9 @@ export function voteOnThresholdProposal(
         caller,
         adopt,
         state,
-        thresholdProposal
+        thresholdProposal,
+        state.threshold,
+        state.signers
     );
 
     const vote_on_proposal_result = mutator();
@@ -123,7 +125,9 @@ function getMutator(
     caller: Principal,
     adopt: boolean,
     state: State,
-    thresholdProposal: ThresholdProposal
+    thresholdProposal: ThresholdProposal,
+    threshold: State['threshold'],
+    signers: State['signers']
 ): VoteMutator {
     const newVotes: Vote[] = [
         ...thresholdProposal.votes,
@@ -136,7 +140,7 @@ function getMutator(
     const adoptVotes = newVotes.filter((vote) => vote.adopt === true);
     const rejectVotes = newVotes.filter((vote) => vote.adopt === false);
 
-    if (adoptVotes.length >= state.threshold) {
+    if (adoptVotes.length >= threshold) {
         return () => {
             state.threshold = thresholdProposal.threshold;
 
@@ -152,7 +156,7 @@ function getMutator(
         };
     }
 
-    if (rejectVotes.length > Object.keys(state.signers).length - state.threshold) {
+    if (rejectVotes.length > Object.keys(signers).length - threshold) {
         return () => {
             thresholdProposal.votes = newVotes;
             thresholdProposal.rejected = true;

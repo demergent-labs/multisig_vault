@@ -41,8 +41,9 @@ export function voteOnSignerProposal(
     const mutator = getMutator(
         caller,
         adopt,
-        state,
-        signerProposal
+        signerProposal,
+        state.threshold,
+        state.signers
     );
 
     const vote_on_proposal_result = mutator();
@@ -50,7 +51,6 @@ export function voteOnSignerProposal(
     return vote_on_proposal_result;
 }
 
-// TODO make sure that we use index types on State wherever possible
 function performChecks(
     adopt: boolean,
     caller: Principal,
@@ -131,8 +131,9 @@ function performChecks(
 function getMutator(
     caller: Principal,
     adopt: boolean,
-    state: State,
-    signerProposal: SignerProposal
+    signerProposal: SignerProposal,
+    threshold: State['threshold'],
+    signers: State['signers']
 ): VoteMutator {
     const newVotes: Vote[] = [
         ...signerProposal.votes,
@@ -145,7 +146,7 @@ function getMutator(
     const adoptVotes = newVotes.filter((vote) => vote.adopt === true);
     const rejectVotes = newVotes.filter((vote) => vote.adopt === false);
 
-    if (adoptVotes.length >= state.threshold) {
+    if (adoptVotes.length >= threshold) {
         return () => {
             if (signerProposal.remove === true) {
                 delete state.signers[signerProposal.signer];
@@ -166,7 +167,7 @@ function getMutator(
         }
     }
 
-    if (rejectVotes.length > Object.keys(state.signers).length - state.threshold) {        
+    if (rejectVotes.length > Object.keys(signers).length - threshold) {        
         return () => {
             signerProposal.votes = newVotes;
             signerProposal.rejected = true;

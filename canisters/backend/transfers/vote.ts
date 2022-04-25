@@ -1,3 +1,5 @@
+// TODO use a getMutator and State['index'] types
+
 import {
     CanisterResult,
     ic,
