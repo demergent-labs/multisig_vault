@@ -13,37 +13,14 @@ import { Principal } from '@dfinity/principal';
 import { AuthClient } from '@dfinity/auth-client';
 import { Identity } from '@dfinity/agent';
 
+import '@ui5/webcomponents/dist/Label.js';
+import '@ui5/webcomponents/dist/Link.js';
+import '@ui5/webcomponents-fiori/dist/Bar.js';
+
 import './demerg-signers';
 import './demerg-stats-and-info';
 import './demerg-threshold';
 import './demerg-transfers';
-
-import '@ui5/webcomponents/dist/Card.js';
-import '@ui5/webcomponents/dist/CardHeader.js';
-import '@ui5/webcomponents/dist/Button.js';
-import '@ui5/webcomponents/dist/Table.js';
-import '@ui5/webcomponents/dist/TableColumn.js';
-import '@ui5/webcomponents/dist/TableRow.js';
-import '@ui5/webcomponents/dist/TableCell.js';
-import '@ui5/webcomponents/dist/Label.js';
-import '@ui5/webcomponents/dist/Dialog.js';
-import '@ui5/webcomponents/dist/Input.js';
-import '@ui5/webcomponents/dist/BusyIndicator.js';
-import '@ui5/webcomponents/dist/Toast.js';
-import '@ui5/webcomponents/dist/Link.js';
-import '@ui5/webcomponents/dist/ToggleButton.js';
-import '@ui5/webcomponents/dist/Icon.js';
-
-import '@ui5/webcomponents-icons/dist/refresh.js';
-import '@ui5/webcomponents-fiori/dist/Bar.js';
-
-// TODO import the respective components into the component that directly depend on them
-import '@spectrum-web-components/theme/sp-theme.js';
-import '@spectrum-web-components/theme/src/themes.js';
-import '@spectrum-web-components/number-field/sp-number-field.js';
-import '@spectrum-web-components/slider/sp-slider.js';
-import '@spectrum-web-components/radio/sp-radio.js';
-import '@spectrum-web-components/radio/sp-radio-group.js';
 
 export type SignersChangedEvent = {
     detail: State['signers'];

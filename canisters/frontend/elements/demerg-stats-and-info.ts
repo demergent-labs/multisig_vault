@@ -14,6 +14,16 @@ import {
 } from 'lit-html';
 import { createObjectStore } from 'reduxular';
 
+import '@ui5/webcomponents/dist/BusyIndicator.js';
+import '@ui5/webcomponents/dist/Button.js';
+import '@ui5/webcomponents/dist/Card.js';
+import '@ui5/webcomponents/dist/CardHeader.js';
+import '@ui5/webcomponents/dist/Label.js';
+import '@ui5/webcomponents/dist/Table.js';
+import '@ui5/webcomponents/dist/TableCell.js';
+import '@ui5/webcomponents/dist/TableColumn.js';
+import '@ui5/webcomponents/dist/TableRow.js';
+
 type State = {
     backend: DemergAppState['backend'];
     canister_address: {

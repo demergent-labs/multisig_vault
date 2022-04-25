@@ -14,6 +14,26 @@ import {
 } from 'lit-html';
 import { createObjectStore } from 'reduxular';
 
+import '@spectrum-web-components/theme/sp-theme.js';
+import '@spectrum-web-components/theme/src/themes.js';
+import '@spectrum-web-components/slider/sp-slider.js';
+
+import '@ui5/webcomponents/dist/BusyIndicator.js';
+import '@ui5/webcomponents/dist/Button.js';
+import '@ui5/webcomponents/dist/Card.js';
+import '@ui5/webcomponents/dist/CardHeader.js';
+import '@ui5/webcomponents/dist/Dialog.js';
+import '@ui5/webcomponents/dist/Icon.js';
+import '@ui5/webcomponents/dist/Input.js';
+import '@ui5/webcomponents/dist/Label.js';
+import '@ui5/webcomponents/dist/Table.js';
+import '@ui5/webcomponents/dist/TableCell.js';
+import '@ui5/webcomponents/dist/TableColumn.js';
+import '@ui5/webcomponents/dist/TableRow.js';
+import '@ui5/webcomponents/dist/Toast.js';
+
+import '@ui5/webcomponents-icons/dist/refresh.js';
+
 type State = {
     backend: DemergAppState['backend'];
     creatingThresholdProposal: boolean;
@@ -202,20 +222,6 @@ class DemergThreshold extends HTMLElement {
 
         return html`
             <style>
-                .main-container {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    width: 100%;
-                    height: 100%;
-                    padding-top: 1rem;
-                }
-
-                .proposals-container {
-                    width: 75%;
-                    padding-bottom: 1rem;
-                }
-
                 .proposals-table {
                     overflow-x: scroll;
                 }
