@@ -21,10 +21,12 @@ export function voteOnSignerProposal(
     const caller = ic.caller();
         
     const checks_result = performChecks(
+        adopt,
         caller,
         signerProposalId,
         state.signerProposals,
-        state.signers
+        state.signers,
+        state.transferProposals
     );
 
     if (checks_result.ok === undefined) {
@@ -49,10 +51,12 @@ export function voteOnSignerProposal(
 
 // TODO make sure that we use index types on State wherever possible
 function performChecks(
+    adopt: boolean,
     caller: Principal,
     signerProposalId: string,
     signerProposals: State['signerProposals'],
-    signers: State['signers']
+    signers: State['signers'],
+    transferProposals: State['transferProposals']
 ): VoteOnSignerProposalChecksResult {
     if (isSigner(caller) === false) {
         return {
@@ -94,6 +98,17 @@ function performChecks(
     ) {
         return {
             err: `Signer ${signerProposal.signer} does not exist`
+        };
+    }
+
+    const open_transfer_proposals = Object.values(transferProposals).filter((transfer_proposal) => transfer_proposal?.adopted === false && transfer_proposal?.rejected === false);
+
+    if (
+        adopt === true &&
+        open_transfer_proposals.length > 0
+    ) {
+        return {
+            err: `All transfer proposals must be adopted or rejected before changing signers`
         };
     }
 

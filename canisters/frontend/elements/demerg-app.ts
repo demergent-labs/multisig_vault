@@ -20,6 +20,7 @@ import {
 import { Principal } from '@dfinity/principal';
 import { AuthClient } from '@dfinity/auth-client';
 import { Identity } from '@dfinity/agent';
+
 import '@ui5/webcomponents/dist/Card.js';
 import '@ui5/webcomponents/dist/CardHeader.js';
 import '@ui5/webcomponents/dist/Button.js';
@@ -34,14 +35,17 @@ import '@ui5/webcomponents/dist/BusyIndicator.js';
 import '@ui5/webcomponents/dist/Toast.js';
 import '@ui5/webcomponents/dist/Link.js';
 import '@ui5/webcomponents/dist/ToggleButton.js';
+import '@ui5/webcomponents/dist/Icon.js';
+
+import '@ui5/webcomponents-icons/dist/refresh.js';
 import '@ui5/webcomponents-fiori/dist/Bar.js';
 
 import '@spectrum-web-components/theme/sp-theme.js';
 import '@spectrum-web-components/theme/src/themes.js';
 import '@spectrum-web-components/number-field/sp-number-field.js';
 import '@spectrum-web-components/slider/sp-slider.js';
-
-// TODO use ui5-step-input instead of number input, set min and max, set initial value to the current threshold
+import '@spectrum-web-components/radio/sp-radio.js';
+import '@spectrum-web-components/radio/sp-radio-group.js';
 
 // TODO split up into components
 // TODO fully generalize proposal components
@@ -397,7 +401,7 @@ class DemergApp extends HTMLElement {
         try {
             const description = (this.shadow.querySelector('#input-signer-proposal-description') as any).value as string;
             const signer = (this.shadow.querySelector('#input-signer-proposal-signer') as any).value as string;
-            const remove = (this.shadow.querySelector('#input-signer-proposal-remove') as any).pressed as boolean;
+            const remove = (this.shadow.querySelector('#input-signer-proposal-remove') as any).checked as boolean;
 
             const result = await this.store.backend.proposeSigner(description, Principal.fromText(signer), remove);
 
@@ -651,11 +655,7 @@ class DemergApp extends HTMLElement {
                     display: flex;
                 }
 
-                .create-proposal-button {
-                    margin-right: .25rem;
-                }
-
-                .view-signers-button {
+                .table-main-button {
                     margin-right: .25rem;
                 }
 
@@ -687,41 +687,54 @@ class DemergApp extends HTMLElement {
                     <ui5-card-header title-text="Transfers" subtitle-text="${canisterBalanceText}">
                         <div class="card-header-action-container" slot="action">
                             <ui5-button
-                                class="create-proposal-button"
+                                class="table-main-button"
                                 design="Emphasized"
                                 @click=${() => this.store.hideCreateTransferProposal = false}
                             >
                                 Create Proposal
                             </ui5-button>
 
+                            <ui5-button
+                                class="table-main-button"
+                                ?hidden=${!state.hideOpenTransferProposals}
+                                @click=${async () => {
+                                    this.store.hideOpenTransferProposals = false;
+                                    
+                                    this.store.loadingTransferProposals = true;
+                                    await this.loadTransferProposals();
+                                    this.store.loadingTransferProposals = false;
+                                }}
+                            >
+                                View Open Proposals
+                            </ui5-button>
+
+                            <ui5-button
+                                class="table-main-button"
+                                ?hidden=${state.hideOpenTransferProposals}
+                                @click=${async () => {
+                                    this.store.hideOpenTransferProposals = true;
+
+                                    this.store.loadingTransferProposals = true;
+                                    await this.loadTransferProposals();
+                                    this.store.loadingTransferProposals = false;
+                                }}
+                            >
+                                View Closed Proposals
+                            </ui5-button>
+
                             <ui5-busy-indicator
                                 size="Small"
                                 .active=${state.loadingTransferProposals}
+                                delay="0"
                             >
                                 <ui5-button
-                                    ?hidden=${!state.hideOpenTransferProposals}
                                     @click=${async () => {
-                                        this.store.hideOpenTransferProposals = false;
-                                        
                                         this.store.loadingTransferProposals = true;
                                         await this.loadTransferProposals();
                                         this.store.loadingTransferProposals = false;
                                     }}
                                 >
-                                    View Open Proposals
-                                </ui5-button>
-
-                                <ui5-button
-                                    ?hidden=${state.hideOpenTransferProposals}
-                                    @click=${async () => {
-                                        this.store.hideOpenTransferProposals = true;
-
-                                        this.store.loadingTransferProposals = true;
-                                        await this.loadTransferProposals();
-                                        this.store.loadingTransferProposals = false;
-                                    }}
-                                >
-                                    View Closed Proposals
+                                    <ui5-icon name="refresh"></ui5-icon>
                                 </ui5-button>
                             </ui5-busy-indicator>
                         </div>
@@ -731,6 +744,11 @@ class DemergApp extends HTMLElement {
                         class="proposals-table"
                         no-data-text="No ${state.hideOpenTransferProposals === true ? 'closed' : 'open'} proposals"
                     >
+                        ${state.hideOpenTransferProposals === false ? html`
+                            <ui5-table-column slot="columns"></ui5-table-column>
+                            <ui5-table-column slot="columns"></ui5-table-column>
+                        ` : ''}
+
                         <ui5-table-column slot="columns" demand-popin>
                             <ui5-label>ID</ui5-label>
                         </ui5-table-column>
@@ -767,11 +785,6 @@ class DemergApp extends HTMLElement {
                             <ui5-label>Status</ui5-label>
                         </ui5-table-column>
     
-                        ${state.hideOpenTransferProposals === false ? html`
-                            <ui5-table-column slot="columns"></ui5-table-column>
-                            <ui5-table-column slot="columns"></ui5-table-column>
-                        ` : ''}
-    
                         ${state.transferProposals.filter((transferProposal) => {
                             const open = transferProposal.adopted === false && transferProposal.rejected === false;
                             const hidden = (open && state.hideOpenTransferProposals === true) || (!open && state.hideOpenTransferProposals === false);
@@ -790,6 +803,38 @@ class DemergApp extends HTMLElement {
     
                             return html`
                                 <ui5-table-row>
+                                    ${state.hideOpenTransferProposals === false ? html`
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[transferProposal.id]?.adopting}
+                                                delay="0"
+                                            >
+                                                <ui5-button
+                                                    design="Positive"
+                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, true)}
+                                                >
+                                                    Adopt
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+    
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[transferProposal.id]?.rejecting}
+                                                delay="0"
+                                            >
+                                                <ui5-button
+                                                    design="Negative"
+                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, false)}
+                                                >
+                                                    Reject
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+                                    ` : ''}
+
                                     <ui5-table-cell>
                                         <ui5-label title="${transferProposal.id}">${idTrimmed}</ui5-label>
                                     </ui5-table-cell>
@@ -825,36 +870,6 @@ class DemergApp extends HTMLElement {
                                     <ui5-table-cell>
                                         <ui5-label>${status}</ui5-label>
                                     </ui5-table-cell>
-    
-                                    ${state.hideOpenTransferProposals === false ? html`
-                                        <ui5-table-cell>
-                                            <ui5-busy-indicator
-                                                size="Small"
-                                                .active=${state.votingOnProposals[transferProposal.id]?.adopting}
-                                            >
-                                                <ui5-button
-                                                    design="Positive"
-                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, true)}
-                                                >
-                                                    Adopt
-                                                </ui5-button>
-                                            </ui5-busy-indicator>
-                                        </ui5-table-cell>
-    
-                                        <ui5-table-cell>
-                                            <ui5-busy-indicator
-                                                size="Small"
-                                                .active=${state.votingOnProposals[transferProposal.id]?.rejecting}
-                                            >
-                                                <ui5-button
-                                                    design="Negative"
-                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, false)}
-                                                >
-                                                    Reject
-                                                </ui5-button>
-                                            </ui5-busy-indicator>
-                                        </ui5-table-cell>
-                                    ` : ''}
                                 </ui5-table-row>
                             `;
                         })}
@@ -903,6 +918,7 @@ class DemergApp extends HTMLElement {
                             <ui5-busy-indicator
                                 size="Small"
                                 .active=${state.creatingTransferProposal}
+                                delay="0"
                             >
                                 <ui5-button
                                     class="dialog-footer-main-button"
@@ -922,45 +938,57 @@ class DemergApp extends HTMLElement {
                     <ui5-card-header title-text="Threshold" subtitle-text="${thresholdSubtitleText}">
                         <div class="card-header-action-container" slot="action">
                             <ui5-button
-                                class="create-proposal-button"
+                                class="table-main-button"
                                 design="Emphasized"
                                 @click=${() => this.store.hideCreateThresholdProposal = false}
                             >
                                 Create Proposal
                             </ui5-button>
 
+                            <ui5-button
+                                class="table-main-button"
+                                ?hidden=${!state.hideOpenThresholdProposals}
+                                @click=${async () => {
+                                    this.store.hideOpenThresholdProposals = false;
+                                    
+                                    
+                                    this.store.loadingThresholdProposals = true;
+                                    await this.loadThresholdProposals();
+                                    this.store.loadingThresholdProposals = false;
+                                }}
+                            >
+                                View Open Proposals
+                            </ui5-button>
+                            
+                            <ui5-button
+                                class="table-main-button"
+                                ?hidden=${state.hideOpenThresholdProposals}
+                                @click=${async () => {
+                                    this.store.hideOpenThresholdProposals = true;
+
+                                    this.store.loadingThresholdProposals = true;
+                                    await this.loadThresholdProposals();
+                                    this.store.loadingThresholdProposals = false;
+                                }}
+                            >
+                                View Closed Proposals
+                            </ui5-button>
+
                             <ui5-busy-indicator
                                 size="Small"
                                 .active=${state.loadingThresholdProposals}
+                                delay="0"
                             >
                                 <ui5-button
-                                    ?hidden=${!state.hideOpenThresholdProposals}
                                     @click=${async () => {
-                                        this.store.hideOpenThresholdProposals = false;
-                                        
-                                        
                                         this.store.loadingThresholdProposals = true;
                                         await this.loadThresholdProposals();
                                         this.store.loadingThresholdProposals = false;
                                     }}
                                 >
-                                    View Open Proposals
-                                </ui5-button>
-                                
-                                <ui5-button
-                                    ?hidden=${state.hideOpenThresholdProposals}
-                                    @click=${async () => {
-                                        this.store.hideOpenThresholdProposals = true;
-
-                                        this.store.loadingThresholdProposals = true;
-                                        await this.loadThresholdProposals();
-                                        this.store.loadingThresholdProposals = false;
-                                    }}
-                                >
-                                    View Closed Proposals
+                                    <ui5-icon name="refresh"></ui5-icon>
                                 </ui5-button>
                             </ui5-busy-indicator>
-
                         </div>
                     </ui5-card-header>
     
@@ -968,6 +996,11 @@ class DemergApp extends HTMLElement {
                         class="proposals-table"
                         no-data-text="No ${state.hideOpenThresholdProposals === true ? 'closed' : 'open'} proposals"
                     >
+                        ${state.hideOpenThresholdProposals === false ? html`
+                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
+                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
+                        ` : ''}
+
                         <ui5-table-column slot="columns" demand-popin>
                             <ui5-label>ID</ui5-label>
                         </ui5-table-column>
@@ -1000,11 +1033,6 @@ class DemergApp extends HTMLElement {
                             <ui5-label>Status</ui5-label>
                         </ui5-table-column>
     
-                        ${state.hideOpenThresholdProposals === false ? html`
-                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
-                            <ui5-table-column slot="columns" demand-popin></ui5-table-column>
-                        ` : ''}
-    
                         ${state.thresholdProposals.filter((thresholdProposal) => {
                             const open = thresholdProposal.adopted === false && thresholdProposal.rejected === false;
                             const hidden = (open && state.hideOpenThresholdProposals === true) || (!open && state.hideOpenThresholdProposals === false);
@@ -1023,6 +1051,38 @@ class DemergApp extends HTMLElement {
     
                             return html`
                                 <ui5-table-row>
+                                    ${state.hideOpenThresholdProposals === false ? html`
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[thresholdProposal.id]?.adopting}
+                                                delay="0"
+                                            >
+                                                <ui5-button
+                                                    design="Positive"
+                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, true)}
+                                                >
+                                                    Adopt
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+    
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[thresholdProposal.id]?.rejecting}
+                                                delay="0"
+                                            >
+                                                <ui5-button
+                                                    design="Negative"
+                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, false)}
+                                                >
+                                                    Reject
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+                                    ` : ''}
+
                                     <ui5-table-cell>
                                         <ui5-label title="${thresholdProposal.id}">${idTrimmed}</ui5-label>
                                     </ui5-table-cell>
@@ -1054,36 +1114,6 @@ class DemergApp extends HTMLElement {
                                     <ui5-table-cell>
                                         <ui5-label>${status}</ui5-label>
                                     </ui5-table-cell>
-    
-                                    ${state.hideOpenThresholdProposals === false ? html`
-                                        <ui5-table-cell>
-                                            <ui5-busy-indicator
-                                                size="Small"
-                                                .active=${state.votingOnProposals[thresholdProposal.id]?.adopting}
-                                            >
-                                                <ui5-button
-                                                    design="Positive"
-                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, true)}
-                                                >
-                                                    Adopt
-                                                </ui5-button>
-                                            </ui5-busy-indicator>
-                                        </ui5-table-cell>
-    
-                                        <ui5-table-cell>
-                                            <ui5-busy-indicator
-                                                size="Small"
-                                                .active=${state.votingOnProposals[thresholdProposal.id]?.rejecting}
-                                            >
-                                                <ui5-button
-                                                    design="Negative"
-                                                    @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, false)}
-                                                >
-                                                    Reject
-                                                </ui5-button>
-                                            </ui5-busy-indicator>
-                                        </ui5-table-cell>
-                                    ` : ''}
                                 </ui5-table-row>
                             `;
                         })}
@@ -1124,6 +1154,7 @@ class DemergApp extends HTMLElement {
                             <ui5-busy-indicator
                                 size="Small"
                                 .active=${state.creatingThresholdProposal}
+                                delay="0"
                             >
                                 <ui5-button
                                     class="dialog-footer-main-button"
@@ -1143,63 +1174,78 @@ class DemergApp extends HTMLElement {
                     <ui5-card-header title-text="Signers">
                         <div class="card-header-action-container" slot="action">
                             <ui5-button
-                                class="create-proposal-button"
+                                class="table-main-button"
                                 design="Emphasized"
                                 @click=${() => this.store.hideCreateSignerProposal = false}
                             >
                                 Create Proposal
                             </ui5-button>
 
+                            <ui5-button
+                                class="table-main-button"
+                                design="Attention"
+                                @click=${async () => {
+                                    this.store.hideSigners = false;
+                                    this.store.hideOpenSignerProposals = true;
+                                
+                                    this.store.loadingSigners = true;
+                                    await this.loadSigners();
+                                    this.store.loadingSigners = false;
+                                }}
+                            >
+                                View Signers
+                            </ui5-button>
+
+                            <ui5-button
+                                class="table-main-button"
+                                ?hidden=${!state.hideOpenSignerProposals}
+                                @click=${async () => {
+                                    this.store.hideSigners = true;
+                                    this.store.hideOpenSignerProposals = false;
+
+                                    this.store.loadingSignerProposals = true;
+                                    await this.loadSignerProposals();
+                                    this.store.loadingSignerProposals = false;
+                                }}
+                            >
+                                View Open Proposals
+                            </ui5-button>
+
+                            <ui5-button
+                                class="table-main-button"
+                                ?hidden=${state.hideOpenSignerProposals}
+                                @click=${async () => {
+                                    this.store.hideSigners = true;
+                                    this.store.hideOpenSignerProposals = true;
+
+                                    this.store.loadingSignerProposals = true;
+                                    await this.loadSignerProposals();
+                                    this.store.loadingSignerProposals = false;
+                                }}
+                            >
+                                View Closed Proposals
+                            </ui5-button>
+
                             <ui5-busy-indicator
                                 size="Small"
-                                .active=${state.loadingSigners}
+                                .active=${state.loadingSigners || state.loadingSignerProposals}
+                                delay="0"
                             >
                                 <ui5-button
-                                    class="view-signers-button"
-                                    design="Attention"
                                     @click=${async () => {
-                                        this.store.hideSigners = false;
-                                        this.store.hideOpenSignerProposals = true;
-                                    
                                         this.store.loadingSigners = true;
-                                        await this.loadSigners();
+                                        this.store.loadingSignerProposals = true;
+
+                                        await Promise.all([
+                                            this.loadSigners(),
+                                            this.loadSignerProposals()
+                                        ]);
+
                                         this.store.loadingSigners = false;
-                                    }}
-                                >
-                                    View Signers
-                                </ui5-button>
-                            </ui5-busy-indicator>
-
-                            <ui5-busy-indicator
-                                size="Small"
-                                .active=${state.loadingSignerProposals}
-                            >
-                                <ui5-button
-                                    ?hidden=${!state.hideOpenSignerProposals}
-                                    @click=${async () => {
-                                        this.store.hideSigners = true;
-                                        this.store.hideOpenSignerProposals = false;
-
-                                        this.store.loadingSignerProposals = true;
-                                        await this.loadSignerProposals();
                                         this.store.loadingSignerProposals = false;
                                     }}
                                 >
-                                    View Open Proposals
-                                </ui5-button>
-
-                                <ui5-button
-                                    ?hidden=${state.hideOpenSignerProposals}
-                                    @click=${async () => {
-                                        this.store.hideSigners = true;
-                                        this.store.hideOpenSignerProposals = true;
-
-                                        this.store.loadingSignerProposals = true;
-                                        await this.loadSignerProposals();
-                                        this.store.loadingSignerProposals = false;
-                                    }}
-                                >
-                                    View Closed Proposals
+                                    <ui5-icon name="refresh"></ui5-icon>
                                 </ui5-button>
                             </ui5-busy-indicator>
                         </div>
@@ -1210,6 +1256,11 @@ class DemergApp extends HTMLElement {
                         class="proposals-table"
                         no-data-text="No ${state.hideOpenSignerProposals === true ? 'closed' : 'open'} proposals"
                     >
+                        ${state.hideOpenSignerProposals === false ? html`
+                            <ui5-table-column slot="columns"></ui5-table-column>
+                            <ui5-table-column slot="columns"></ui5-table-column>
+                        ` : ''}
+
                         <ui5-table-column slot="columns" demand-popin>
                             <ui5-label>ID</ui5-label>
                         </ui5-table-column>
@@ -1246,11 +1297,6 @@ class DemergApp extends HTMLElement {
                             <ui5-label>Status</ui5-label>
                         </ui5-table-column>
 
-                        ${state.hideOpenSignerProposals === false ? html`
-                            <ui5-table-column slot="columns"></ui5-table-column>
-                            <ui5-table-column slot="columns"></ui5-table-column>
-                        ` : ''}
-
                         ${state.signerProposals.filter((signerProposal) => {
                             const open = signerProposal.adopted === false && signerProposal.rejected === false;
                             const hidden = (open && state.hideOpenSignerProposals === true) || (!open && state.hideOpenSignerProposals === false);
@@ -1269,6 +1315,38 @@ class DemergApp extends HTMLElement {
 
                             return html`
                                 <ui5-table-row>
+                                    ${state.hideOpenSignerProposals === false ? html`
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[signerProposal.id]?.adopting}
+                                                delay="0"
+                                            >
+                                                <ui5-button
+                                                    design="Positive"
+                                                    @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, true)}
+                                                >
+                                                    Adopt
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+
+                                        <ui5-table-cell>
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[signerProposal.id]?.rejecting}
+                                                delay="0"
+                                            >
+                                                <ui5-button
+                                                    design="Negative"
+                                                    @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, false)}
+                                                >
+                                                    Reject
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
+                                        </ui5-table-cell>
+                                    ` : ''}
+
                                     <ui5-table-cell>
                                         <ui5-label title="${signerProposal.id}">${idTrimmed}</ui5-label>
                                     </ui5-table-cell>
@@ -1304,36 +1382,6 @@ class DemergApp extends HTMLElement {
                                     <ui5-table-cell>
                                         <ui5-label>${status}</ui5-label>
                                     </ui5-table-cell>
-
-                                    ${state.hideOpenSignerProposals === false ? html`
-                                        <ui5-table-cell>
-                                            <ui5-busy-indicator
-                                                size="Small"
-                                                .active=${state.votingOnProposals[signerProposal.id]?.adopting}
-                                            >
-                                                <ui5-button
-                                                    design="Positive"
-                                                    @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, true)}
-                                                >
-                                                    Adopt
-                                                </ui5-button>
-                                            </ui5-busy-indicator>
-                                        </ui5-table-cell>
-
-                                        <ui5-table-cell>
-                                            <ui5-busy-indicator
-                                                size="Small"
-                                                .active=${state.votingOnProposals[signerProposal.id]?.rejecting}
-                                            >
-                                                <ui5-button
-                                                    design="Negative"
-                                                    @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, false)}
-                                                >
-                                                    Reject
-                                                </ui5-button>
-                                            </ui5-busy-indicator>
-                                        </ui5-table-cell>
-                                    ` : ''}
                                 </ui5-table-row>
                             `;
                         })}
@@ -1381,7 +1429,15 @@ class DemergApp extends HTMLElement {
                             </div>
 
                             <div class="demerg-input">
-                                <ui5-toggle-button id="input-signer-proposal-remove" design="Negative">Remove signer</ui5-toggle-button>
+                                <sp-theme scale="medium">
+                                    <sp-radio-group
+                                        selected="add-signer"
+                                        vertical
+                                    >
+                                        <sp-radio value="add-signer">Add signer</sp-radio>
+                                        <sp-radio id="input-signer-proposal-remove" value="remove-signer">Remove signer</sp-radio>
+                                    </sp-radio-group>
+                                </sp-theme>
                             </div>
                         </section>
     
@@ -1390,6 +1446,7 @@ class DemergApp extends HTMLElement {
                             <ui5-busy-indicator
                                 size="Small"
                                 .active=${state.creatingSignerProposal}
+                                delay="0"
                             >
                                 <ui5-button
                                     class="dialog-footer-main-button"
@@ -1411,10 +1468,11 @@ class DemergApp extends HTMLElement {
                             <ui5-busy-indicator
                                 size="Small"
                                 .active=${state.loadingCycles}
+                                delay="0"
                             >
                                 <ui5-button
                                     design="Emphasized"
-                                    class="create-proposal-button"
+                                    class="table-main-button"
                                     @click=${async () => {
                                         this.store.loadingCycles =  true;
                                         await this.loadCycleStats();

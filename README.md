@@ -24,3 +24,9 @@ Add backend canister as controller to frontend canister:
 ```bash
 dfx canister --network ic update-settings --add-controller jiyou-fiaaa-aaaam-aad6q-cai frontend
 ```
+
+Add backend canister as controller to backend canister
+
+```bash
+dfx canister --network ic update-settings --add-controller jiyou-fiaaa-aaaam-aad6q-cai backend
+```

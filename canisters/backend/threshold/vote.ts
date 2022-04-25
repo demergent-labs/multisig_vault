@@ -20,10 +20,12 @@ export function voteOnThresholdProposal(
     const caller = ic.caller();
 
     const checks_result = performChecks(
+        adopt,
         caller,
         thresholdProposalId,
         state.thresholdProposals,
-        state.signers
+        state.signers,
+        state.transferProposals
     );
 
     if (checks_result.ok === undefined) {
@@ -47,10 +49,12 @@ export function voteOnThresholdProposal(
 }
 
 function performChecks(
+    adopt: boolean,
     caller: Principal,
     thresholdProposalId: string,
     thresholdProposals: State['thresholdProposals'],
-    signers: State['signers']
+    signers: State['signers'],
+    transferProposals: State['transferProposals']
 ): VoteOnThresholdProposalChecksResult {
     const thresholdProposal = thresholdProposals[thresholdProposalId];
 
@@ -89,6 +93,17 @@ function performChecks(
     if (thresholdProposal.threshold > Object.keys(signers).length) {
         return {
             err: 'Threshold cannot be greater than number of signers'
+        };
+    }
+
+    const open_transfer_proposals = Object.values(transferProposals).filter((transfer_proposal) => transfer_proposal?.adopted === false && transfer_proposal?.rejected === false);
+
+    if (
+        adopt === true &&
+        open_transfer_proposals.length > 0
+    ) {
+        return {
+            err: `All transfer proposals must be adopted or rejected before changing the threshold`
         };
     }
 
