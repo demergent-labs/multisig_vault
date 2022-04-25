@@ -31,8 +31,28 @@ import {
 
 export function get_cycle_stats_info(): Query<CycleStatsInfo> {
     return {
-        frontend: state.frontend_cycle_stats,
-        backend: state.backend_cycle_stats
+        frontend: {
+            cycles_remaining: state.frontend_cycle_stats.cycles_remaining,
+            cycle_time_remaining: state.frontend_cycle_stats.cycle_time_remaining,
+            cycles_per_year: state.frontend_cycle_stats.cycles_per_year,
+            cycles_per_month: state.frontend_cycle_stats.cycles_per_month,
+            cycles_per_week: state.frontend_cycle_stats.cycles_per_week,
+            cycles_per_day: state.frontend_cycle_stats.cycles_per_day,
+            cycles_per_hour: state.frontend_cycle_stats.cycles_per_hour,
+            cycles_per_min: state.frontend_cycle_stats.cycles_per_min,
+            cycles_per_sec: state.frontend_cycle_stats.cycles_per_sec
+        },
+        backend: {
+            cycles_remaining: state.backend_cycle_stats.cycles_remaining,
+            cycle_time_remaining: state.backend_cycle_stats.cycle_time_remaining,
+            cycles_per_year: state.backend_cycle_stats.cycles_per_year,
+            cycles_per_month: state.backend_cycle_stats.cycles_per_month,
+            cycles_per_week: state.backend_cycle_stats.cycles_per_week,
+            cycles_per_day: state.backend_cycle_stats.cycles_per_day,
+            cycles_per_hour: state.backend_cycle_stats.cycles_per_hour,
+            cycles_per_min: state.backend_cycle_stats.cycles_per_min,
+            cycles_per_sec: state.backend_cycle_stats.cycles_per_sec
+        }
     };
 }
 

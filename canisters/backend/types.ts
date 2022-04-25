@@ -147,8 +147,28 @@ export type CycleSnapshot = {
 };
 
 export type CycleStatsInfo = {
-    frontend: CycleStats;
-    backend: CycleStats;
+    frontend: {
+        cycles_remaining: nat64;
+        cycle_time_remaining: nat64;
+        cycles_per_year: nat64;
+        cycles_per_month: nat64;
+        cycles_per_week: nat64;
+        cycles_per_day: nat64;
+        cycles_per_hour: nat64;
+        cycles_per_min: nat64;
+        cycles_per_sec: nat64;
+    };
+    backend: {
+        cycles_remaining: nat64;
+        cycle_time_remaining: nat64;
+        cycles_per_year: nat64;
+        cycles_per_month: nat64;
+        cycles_per_week: nat64;
+        cycles_per_day: nat64;
+        cycles_per_hour: nat64;
+        cycles_per_min: nat64;
+        cycles_per_sec: nat64;
+    };
 };
 
 export type ControllersInfoResult = Variant<{

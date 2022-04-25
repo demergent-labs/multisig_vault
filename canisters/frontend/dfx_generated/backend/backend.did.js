@@ -55,25 +55,29 @@ export const idlFactory = ({ IDL }) => {
     'ok' : ControllersInfo,
     'err' : IDL.Text,
   });
-  const CycleSnapshot = IDL.Record({
-    'cycles_remaining' : IDL.Nat64,
-    'timestamp' : IDL.Nat64,
-  });
-  const CycleStats = IDL.Record({
-    'cycles_remaining' : IDL.Nat64,
-    'cycles_per_day' : IDL.Nat64,
-    'cycles_per_min' : IDL.Nat64,
-    'cycles_per_sec' : IDL.Nat64,
-    'cycles_per_month' : IDL.Nat64,
-    'cycles_per_hour' : IDL.Nat64,
-    'cycles_per_week' : IDL.Nat64,
-    'cycles_per_year' : IDL.Nat64,
-    'cycle_snapshots' : IDL.Vec(CycleSnapshot),
-    'cycle_time_remaining' : IDL.Nat64,
-  });
   const CycleStatsInfo = IDL.Record({
-    'frontend' : CycleStats,
-    'backend' : CycleStats,
+    'frontend' : IDL.Record({
+      'cycles_remaining' : IDL.Nat64,
+      'cycles_per_day' : IDL.Nat64,
+      'cycles_per_min' : IDL.Nat64,
+      'cycles_per_sec' : IDL.Nat64,
+      'cycles_per_month' : IDL.Nat64,
+      'cycles_per_hour' : IDL.Nat64,
+      'cycles_per_week' : IDL.Nat64,
+      'cycles_per_year' : IDL.Nat64,
+      'cycle_time_remaining' : IDL.Nat64,
+    }),
+    'backend' : IDL.Record({
+      'cycles_remaining' : IDL.Nat64,
+      'cycles_per_day' : IDL.Nat64,
+      'cycles_per_min' : IDL.Nat64,
+      'cycles_per_sec' : IDL.Nat64,
+      'cycles_per_month' : IDL.Nat64,
+      'cycles_per_hour' : IDL.Nat64,
+      'cycles_per_week' : IDL.Nat64,
+      'cycles_per_year' : IDL.Nat64,
+      'cycle_time_remaining' : IDL.Nat64,
+    }),
   });
   const DefaultResult = IDL.Variant({ 'ok' : IDL.Bool, 'err' : IDL.Text });
   const VoteOnProposalAction = IDL.Variant({

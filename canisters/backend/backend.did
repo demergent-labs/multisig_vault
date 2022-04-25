@@ -1,6 +1,6 @@
 type CycleStatsInfo = record {
-    "frontend": CycleStats;
-    "backend": CycleStats;
+    "frontend": record { "cycles_remaining": nat64; "cycle_time_remaining": nat64; "cycles_per_year": nat64; "cycles_per_month": nat64; "cycles_per_week": nat64; "cycles_per_day": nat64; "cycles_per_hour": nat64; "cycles_per_min": nat64; "cycles_per_sec": nat64; };
+    "backend": record { "cycles_remaining": nat64; "cycle_time_remaining": nat64; "cycles_per_year": nat64; "cycles_per_month": nat64; "cycles_per_week": nat64; "cycles_per_day": nat64; "cycles_per_hour": nat64; "cycles_per_min": nat64; "cycles_per_sec": nat64; };
 };
 
 type SignerProposal = record {
@@ -89,24 +89,6 @@ type CanisterStatusResult = record {
     "module_hash": opt vec nat8;
     "memory_size": nat;
     "cycles": nat;
-};
-
-type CycleStats = record {
-    "cycles_remaining": nat64;
-    "cycle_time_remaining": nat64;
-    "cycles_per_year": nat64;
-    "cycles_per_month": nat64;
-    "cycles_per_week": nat64;
-    "cycles_per_day": nat64;
-    "cycles_per_hour": nat64;
-    "cycles_per_min": nat64;
-    "cycles_per_sec": nat64;
-    "cycle_snapshots": vec CycleSnapshot;
-};
-
-type CycleSnapshot = record {
-    "cycles_remaining": nat64;
-    "timestamp": nat64;
 };
 
 type Vote = record {

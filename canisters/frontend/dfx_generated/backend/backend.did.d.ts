@@ -17,25 +17,29 @@ export interface ControllersInfo {
 }
 export type ControllersInfoResult = { 'ok' : ControllersInfo } |
   { 'err' : string };
-export interface CycleSnapshot {
-  'cycles_remaining' : bigint,
-  'timestamp' : bigint,
-}
-export interface CycleStats {
-  'cycles_remaining' : bigint,
-  'cycles_per_day' : bigint,
-  'cycles_per_min' : bigint,
-  'cycles_per_sec' : bigint,
-  'cycles_per_month' : bigint,
-  'cycles_per_hour' : bigint,
-  'cycles_per_week' : bigint,
-  'cycles_per_year' : bigint,
-  'cycle_snapshots' : Array<CycleSnapshot>,
-  'cycle_time_remaining' : bigint,
-}
 export interface CycleStatsInfo {
-  'frontend' : CycleStats,
-  'backend' : CycleStats,
+  'frontend' : {
+    'cycles_remaining' : bigint,
+    'cycles_per_day' : bigint,
+    'cycles_per_min' : bigint,
+    'cycles_per_sec' : bigint,
+    'cycles_per_month' : bigint,
+    'cycles_per_hour' : bigint,
+    'cycles_per_week' : bigint,
+    'cycles_per_year' : bigint,
+    'cycle_time_remaining' : bigint,
+  },
+  'backend' : {
+    'cycles_remaining' : bigint,
+    'cycles_per_day' : bigint,
+    'cycles_per_min' : bigint,
+    'cycles_per_sec' : bigint,
+    'cycles_per_month' : bigint,
+    'cycles_per_hour' : bigint,
+    'cycles_per_week' : bigint,
+    'cycles_per_year' : bigint,
+    'cycle_time_remaining' : bigint,
+  },
 }
 export type DefaultResult = { 'ok' : boolean } |
   { 'err' : string };
