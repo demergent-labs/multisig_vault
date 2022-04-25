@@ -90,7 +90,6 @@ function getMutator(
     threshold: nat8
 ): DefaultMutator {
     return () => {
-        // TODO should we make it a best practice to always surround mutations in a try catch? We need to ensure we never get into an inconsistent state
         const id = sha224().update(randomness).digest('hex');
 
         state.thresholdProposals[id] = {
