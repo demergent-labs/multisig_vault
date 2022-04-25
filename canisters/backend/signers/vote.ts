@@ -26,6 +26,7 @@ export function voteOnSignerProposal(
         signerProposalId,
         state.signerProposals,
         state.signers,
+        state.threshold,
         state.transferProposals
     );
 
@@ -56,6 +57,7 @@ function performChecks(
     signerProposalId: string,
     signerProposals: State['signerProposals'],
     signers: State['signers'],
+    threshold: State['threshold'],
     transferProposals: State['transferProposals']
 ): VoteOnSignerProposalChecksResult {
     if (isSigner(caller) === false) {
@@ -109,6 +111,15 @@ function performChecks(
     ) {
         return {
             err: `All transfer proposals must be adopted or rejected before changing signers`
+        };
+    }
+
+    if (
+        signerProposal.remove === true &&
+        Object.keys(signers).length - 1 < threshold
+    ) {
+        return {
+            err: `The number of signers cannot be less than the current threshold`
         };
     }
 
