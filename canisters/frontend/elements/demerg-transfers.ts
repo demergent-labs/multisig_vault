@@ -1,13 +1,13 @@
 import { nat64 } from 'azle';
 import {
-    _SERVICE,
-    TransferProposal
-} from '../dfx_generated/backend/backend.did';
-import {
     // InitialState as DemergAppInitialState, // TODO I would like to do this but getting a circular dependency error
     State as DemergAppState,
     sortCreatedAtDescending
 } from './demerg-app';
+import {
+    _SERVICE,
+    TransferProposal
+} from '../dfx_generated/backend/backend.did';
 import {
     html,
     render as litRender
@@ -508,21 +508,24 @@ class DemergTransfers extends HTMLElement {
 
                     <div slot="footer" class="dialog-footer">
                         <div class="dialog-footer-space"></div>
+
+                        <ui5-button
+                            class="dialog-footer-main-button"
+                            @click=${() => this.store.hideCreateTransferProposal = true}
+                        >Cancel</ui5-button>
+
                         <ui5-busy-indicator
                             size="Small"
                             .active=${state.creatingTransferProposal}
                             delay="0"
                         >
                             <ui5-button
-                                class="dialog-footer-main-button"
                                 design="Emphasized"
                                 @click=${() => this.handleCreateTransferProposalClick()}
                             >
                                 Create
                             </ui5-button>
                         </ui5-busy-indicator>
-
-                        <ui5-button @click=${() => this.store.hideCreateTransferProposal = true}>Cancel</ui5-button>
                     </div>
                 </ui5-dialog>
             ` : ''}
