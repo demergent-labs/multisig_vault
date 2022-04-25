@@ -62,7 +62,7 @@ function performChecks(
 ): VoteOnSignerProposalChecksResult {
     if (isSigner(caller) === false) {
         return {
-            err: 'Only signers can approve a signer proposal'
+            err: 'Only signers can vote on proposals'
         };
     }
 

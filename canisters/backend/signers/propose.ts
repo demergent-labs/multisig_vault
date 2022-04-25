@@ -25,7 +25,6 @@ export function* proposeSigner(
     const checks_result = performChecks(
         caller,
         state.signers,
-        state.threshold,
         signer,
         remove
     );
@@ -62,13 +61,12 @@ export function* proposeSigner(
 function performChecks(
     caller: Principal,
     signers: State['signers'],
-    threshold: State['threshold'],
     signer: Principal,
     remove: boolean
 ): DefaultResult {
     if (isSigner(caller) === false) {
         return {
-            err: 'Only signers can propose a signer'
+            err: 'Only signers can create a proposal'
         };
     }
 
@@ -78,15 +76,6 @@ function performChecks(
     ) {
         return {
             err: `Signer ${signer} does not exist`
-        };
-    }
-
-    if (
-        remove === true &&
-        Object.keys(signers).length - 1 < threshold
-    ) {
-        return {
-            err: `The number of signers cannot be less than the current threshold`
         };
     }
 

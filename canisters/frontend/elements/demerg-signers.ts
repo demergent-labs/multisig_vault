@@ -371,19 +371,19 @@ export class DemergSigners extends HTMLElement {
                                             >
                                                 Adopt
                                             </ui5-button>
-
-                                            <ui5-busy-indicator
-                                                size="Small"
-                                                .active=${state.votingOnProposals[signerProposal.id]?.rejecting}
-                                                delay="0"
+                                        </ui5-busy-indicator>
+                                        
+                                        <ui5-busy-indicator
+                                            size="Small"
+                                            .active=${state.votingOnProposals[signerProposal.id]?.rejecting}
+                                            delay="0"
+                                        >
+                                            <ui5-button
+                                                design="Negative"
+                                                @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, false)}
                                             >
-                                                <ui5-button
-                                                    design="Negative"
-                                                    @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, false)}
-                                                >
-                                                    Reject
-                                                </ui5-button>
-                                            </ui5-busy-indicator>
+                                                Reject
+                                            </ui5-button>
                                         </ui5-busy-indicator>
                                     </ui5-table-cell>
                                 ` : ''}

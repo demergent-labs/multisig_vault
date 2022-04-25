@@ -62,7 +62,7 @@ function performChecks(
 ): DefaultResult {
     if (isSigner(caller) === false) {
         return {
-            err: 'Only signers can propose a threshold'
+            err: 'Only signers can create a proposal'
         };
     }
 

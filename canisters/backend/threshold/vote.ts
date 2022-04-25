@@ -4,6 +4,7 @@ import {
     Update
 } from 'azle';
 import { state } from '../backend';
+import { isSigner } from '../signers';
 import {
     State,
     ThresholdProposal,
@@ -56,6 +57,12 @@ function performChecks(
     signers: State['signers'],
     transferProposals: State['transferProposals']
 ): VoteOnThresholdProposalChecksResult {
+    if (isSigner(caller) === false) {
+        return {
+            err: 'Only signers can vote on proposals'
+        };
+    }
+
     const thresholdProposal = thresholdProposals[thresholdProposalId];
 
     if (thresholdProposal === undefined) {
