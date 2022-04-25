@@ -1,3 +1,5 @@
+// TODO once everything is componentized, figure out how general we want to make everything
+
 import {
     html,
     render as litRender
@@ -13,13 +15,14 @@ import {
     ControllersInfo,
     ThresholdProposal,
     SignerProposal,
-    TransferProposal,
     _SERVICE,
     CycleStatsInfo
 } from '../dfx_generated/backend/backend.did';
 import { Principal } from '@dfinity/principal';
 import { AuthClient } from '@dfinity/auth-client';
 import { Identity } from '@dfinity/agent';
+
+import './demerg-transfers';
 
 import '@ui5/webcomponents/dist/Card.js';
 import '@ui5/webcomponents/dist/CardHeader.js';
@@ -50,7 +53,7 @@ import '@spectrum-web-components/radio/sp-radio-group.js';
 // TODO split up into components
 // TODO fully generalize proposal components
 
-type State = {
+export type State = {
     backend: ActorSubclass<_SERVICE> | null;
     cycles_stats_info: CycleStatsInfo | null;
     controllers_info: ControllersInfo | null;
@@ -63,10 +66,6 @@ type State = {
         value: string;
     };
     identity: Identity | null;
-    balance: {
-        loading: boolean;
-        value: nat64;
-    };
     threshold: {
         loading: boolean;
         value: nat8;
@@ -78,13 +77,11 @@ type State = {
         value: Principal[];
     };
     signerProposals: SignerProposal[];
-    transferProposals: TransferProposal[];
     hideCreateSignerProposal: boolean;
     hideCreateTransferProposal: boolean;
     hideSigners: boolean;
     hideOpenSignerProposals: boolean;
     hideOpenThresholdProposals: boolean;
-    hideOpenTransferProposals: boolean;
     creatingThresholdProposal: boolean;
     creatingSignerProposal: boolean;
     creatingTransferProposal: boolean;
@@ -96,14 +93,13 @@ type State = {
     };
     errorMessage: string;
     showErrorDialog: boolean;
-    loadingTransferProposals: boolean;
     loadingSignerProposals: boolean;
     loadingSigners: boolean;
     loadingThresholdProposals: boolean;
     loadingCycles: boolean;
 };
 
-const InitialState: State = {
+export const InitialState: State = {
     backend: null,
     cycles_stats_info: null,
     controllers_info: null,
@@ -116,10 +112,6 @@ const InitialState: State = {
         value: ''
     },
     identity: null,
-    balance: {
-        loading: true,
-        value: 0n
-    },
     threshold: {
         loading: true,
         value: 0
@@ -131,20 +123,17 @@ const InitialState: State = {
         value: []
     },
     signerProposals: [],
-    transferProposals: [],
     hideCreateTransferProposal: true,
     hideCreateSignerProposal: true,
     hideSigners: false,
     hideOpenSignerProposals: true,
     hideOpenThresholdProposals: false,
-    hideOpenTransferProposals: false,
     creatingThresholdProposal: false,
     creatingSignerProposal: false,
     creatingTransferProposal: false,
     votingOnProposals: {},
     errorMessage: '',
     showErrorDialog: false,
-    loadingTransferProposals: false,
     loadingSignerProposals: false,
     loadingSigners: false,
     loadingThresholdProposals: false,
@@ -201,17 +190,6 @@ class DemergApp extends HTMLElement {
         }
 
         await Promise.all([
-            this.store.backend.getVaultBalance().then((balance) => {
-                if ('ok' in balance) {
-                    this.store.balance = {
-                        loading: false,
-                        value: balance.ok
-                    };
-                }
-                else {
-                    this.handleError((balance as any).err);
-                }
-            }),
             this.store.backend.getCanisterAddress().then((address) => {
                 this.store.canister_address = {
                     loading: false,
@@ -239,7 +217,6 @@ class DemergApp extends HTMLElement {
                 }
             }),
             this.loadSigners(),
-            this.loadTransferProposals(),
             this.loadSignerProposals(),
             this.loadThresholdProposals(),
             this.loadCycleStats()
@@ -260,19 +237,6 @@ class DemergApp extends HTMLElement {
         this.store.cycles_stats_info = cycleStatsInfo;
 
         console.log('this.store.cycles_stats_info', this.store.cycles_stats_info);
-    }
-
-    async loadTransferProposals() {
-        if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
-
-            return;
-        }
-
-        const transferProposals = await this.store.backend.getTransferProposals();
-        
-        this.store.transferProposals = sortCreatedAtDescending(transferProposals);
     }
 
     async loadSignerProposals() {
@@ -462,80 +426,6 @@ class DemergApp extends HTMLElement {
         };
     }
 
-    async handleCreateTransferProposalClick() {
-        if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
-
-            return;
-        }
-
-        this.store.creatingTransferProposal = true;
-
-        try {
-            const description = (this.shadow.querySelector('#input-transfer-proposal-description') as any).value as string;
-            const destinationAddress = (this.shadow.querySelector('#input-transfer-proposal-destination-address') as any).value as string;
-            const amountString = (this.shadow.querySelector('#input-transfer-proposal-amount') as any).value.toString() as string;
-            const decimals = amountString?.split('.')[1]?.length ?? 0;
-            const amount = BigInt(Number(amountString ?? 0) * 10**decimals) * BigInt(10**(8 - decimals));
-
-            const result = await this.store.backend.proposeTransfer(description, destinationAddress, amount);
-
-            if (result.hasOwnProperty('ok')) {
-                this.loadData();
-                (this.shadow.querySelector('#toast-proposal-created') as any).show();
-            }
-            else {
-                this.handleError((result as any).err);
-            }
-        }
-        catch(error) {
-            this.handleError(error);
-        }
-        
-        this.store.hideCreateTransferProposal = true;
-        this.store.creatingTransferProposal = false;
-    }
-
-    async handleVoteOnTransferProposalClick(transferProposalId: string, adopt: boolean) {
-        if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
-
-            return;
-        }
-
-        this.store.votingOnProposals = {
-            [transferProposalId]: {
-                adopting: adopt === true,
-                rejecting: adopt === false
-            }
-        };
-
-        try {
-            const result = await this.store.backend.voteOnTransferProposal(transferProposalId, adopt);
-
-            if (result.hasOwnProperty('ok')) {
-                this.loadData();
-                (this.shadow.querySelector('#toast-vote-recorded') as any).show();
-            }
-            else {
-                this.handleError((result as any).err);
-            }
-        }
-        catch(error) {
-            this.handleError(error);
-        }
-
-        // TODO this is technically a memory leak, but probably won't be an issue
-        this.store.votingOnProposals = {
-            [transferProposalId]: {
-                adopting: false,
-                rejecting: false
-            }
-        };
-    }
-
     async snapshotCycles() {
         if (this.store.backend === null) {
             this.store.errorMessage = 'You are not authenticated, please refresh.'
@@ -569,8 +459,6 @@ class DemergApp extends HTMLElement {
 
     render(state: State) {
         const thresholdSubtitleText = state.threshold.loading === true || state.signers.loading === true ? 'Loading...' : `${state.threshold.value} of ${state.signers.value.length} signers required`;
-
-        const canisterBalanceText = state.balance.loading === true ? 'Loading...' : `${Number(state.balance.value * 10000n / BigInt(10**8)) / 10000} ICP available`;
         
         const canisterAddressText = state.canister_address.loading === true ? 'Loading...' : state.canister_address.value;
 
@@ -637,7 +525,6 @@ class DemergApp extends HTMLElement {
                     flex-direction: column;
                 }
 
-                /* TODO I would prefer to use classes provided by the ui5 web components, but I need more info: https://github.com/SAP/ui5-webcomponents/issues/5094 */
                 .dialog-footer {
                     display: flex;
                     padding: .5rem;
@@ -657,10 +544,6 @@ class DemergApp extends HTMLElement {
 
                 .table-main-button {
                     margin-right: .25rem;
-                }
-
-                .number-input {
-
                 }
             </style>
 
@@ -683,256 +566,11 @@ class DemergApp extends HTMLElement {
             </ui5-bar>
 
             <div class="main-container">
-                <ui5-card class="proposals-container">
-                    <ui5-card-header title-text="Transfers" subtitle-text="${canisterBalanceText}">
-                        <div class="card-header-action-container" slot="action">
-                            <ui5-button
-                                class="table-main-button"
-                                design="Emphasized"
-                                @click=${() => this.store.hideCreateTransferProposal = false}
-                            >
-                                Create Proposal
-                            </ui5-button>
-
-                            <ui5-button
-                                class="table-main-button"
-                                ?hidden=${!state.hideOpenTransferProposals}
-                                @click=${async () => {
-                                    this.store.hideOpenTransferProposals = false;
-                                    
-                                    this.store.loadingTransferProposals = true;
-                                    await this.loadTransferProposals();
-                                    this.store.loadingTransferProposals = false;
-                                }}
-                            >
-                                View Open Proposals
-                            </ui5-button>
-
-                            <ui5-button
-                                class="table-main-button"
-                                ?hidden=${state.hideOpenTransferProposals}
-                                @click=${async () => {
-                                    this.store.hideOpenTransferProposals = true;
-
-                                    this.store.loadingTransferProposals = true;
-                                    await this.loadTransferProposals();
-                                    this.store.loadingTransferProposals = false;
-                                }}
-                            >
-                                View Closed Proposals
-                            </ui5-button>
-
-                            <ui5-busy-indicator
-                                size="Small"
-                                .active=${state.loadingTransferProposals}
-                                delay="0"
-                            >
-                                <ui5-button
-                                    @click=${async () => {
-                                        this.store.loadingTransferProposals = true;
-                                        await this.loadTransferProposals();
-                                        this.store.loadingTransferProposals = false;
-                                    }}
-                                >
-                                    <ui5-icon name="refresh"></ui5-icon>
-                                </ui5-button>
-                            </ui5-busy-indicator>
-                        </div>
-                    </ui5-card-header>
-    
-                    <ui5-table
-                        class="proposals-table"
-                        no-data-text="No ${state.hideOpenTransferProposals === true ? 'closed' : 'open'} proposals"
-                    >
-                        ${state.hideOpenTransferProposals === false ? html`
-                            <ui5-table-column slot="columns"></ui5-table-column>
-                            <ui5-table-column slot="columns"></ui5-table-column>
-                        ` : ''}
-
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>ID</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Created At</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Proposer</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Description</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Destination Address</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Amount</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Votes For</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Votes Against</ui5-label>
-                        </ui5-table-column>
-    
-                        <ui5-table-column slot="columns" demand-popin>
-                            <ui5-label>Status</ui5-label>
-                        </ui5-table-column>
-    
-                        ${state.transferProposals.filter((transferProposal) => {
-                            const open = transferProposal.adopted === false && transferProposal.rejected === false;
-                            const hidden = (open && state.hideOpenTransferProposals === true) || (!open && state.hideOpenTransferProposals === false);
-    
-                            return hidden === false;
-                        }).map((transferProposal) => {
-                            const idTrimmed = `${transferProposal.id.slice(0, 5)}...${transferProposal.id.slice(transferProposal.id.length - 5, transferProposal.id.length)}`;
-                            const proposerTrimmed = `${transferProposal.proposer.toString().slice(0, 5)}...${transferProposal.proposer.toString().slice(transferProposal.proposer.toString().length - 5, transferProposal.proposer.toString().length)}`;
-    
-                            const votesFor = transferProposal.votes.filter((vote) => vote.adopt === true).length;
-                            const votesAgainst = transferProposal.votes.filter((vote) => vote.adopt === false).length;
-    
-                            const status = transferProposal.adopted === true ?
-                                `Adopted ${new Date(Number((transferProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : transferProposal.rejected === true ?
-                                    `Rejected ${new Date(Number((transferProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
-    
-                            return html`
-                                <ui5-table-row>
-                                    ${state.hideOpenTransferProposals === false ? html`
-                                        <ui5-table-cell>
-                                            <ui5-busy-indicator
-                                                size="Small"
-                                                .active=${state.votingOnProposals[transferProposal.id]?.adopting}
-                                                delay="0"
-                                            >
-                                                <ui5-button
-                                                    design="Positive"
-                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, true)}
-                                                >
-                                                    Adopt
-                                                </ui5-button>
-                                            </ui5-busy-indicator>
-                                        </ui5-table-cell>
-    
-                                        <ui5-table-cell>
-                                            <ui5-busy-indicator
-                                                size="Small"
-                                                .active=${state.votingOnProposals[transferProposal.id]?.rejecting}
-                                                delay="0"
-                                            >
-                                                <ui5-button
-                                                    design="Negative"
-                                                    @click=${() => this.handleVoteOnTransferProposalClick(transferProposal.id, false)}
-                                                >
-                                                    Reject
-                                                </ui5-button>
-                                            </ui5-busy-indicator>
-                                        </ui5-table-cell>
-                                    ` : ''}
-
-                                    <ui5-table-cell>
-                                        <ui5-label title="${transferProposal.id}">${idTrimmed}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${new Date(Number(transferProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label title="${transferProposal.proposer}">${proposerTrimmed}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${transferProposal.description}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${transferProposal.destinationAddress}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${Number(transferProposal.amount * 10000n / BigInt(10**8)) / 10000} ICP</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${votesFor}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${votesAgainst}</ui5-label>
-                                    </ui5-table-cell>
-    
-                                    <ui5-table-cell>
-                                        <ui5-label>${status}</ui5-label>
-                                    </ui5-table-cell>
-                                </ui5-table-row>
-                            `;
-                        })}
-                    </ui5-table>
-                </ui5-card>
-    
-                ${state.hideCreateTransferProposal === false ? html`
-                    <ui5-dialog
-                        header-text="Transfer Proposal"
-                        .open=${true}
-                    >
-                        <section class="demerg-input-form">
-                            <div class="demerg-input">
-                                <div class="demerg-input-and-label">
-                                    <ui5-label for="input-transfer-proposal-description" required>Description:</ui5-label>
-                                    <ui5-input id="input-transfer-proposal-description"></ui5-input>
-                                </div>
-                            </div>
-    
-                            <div class="demerg-input">
-                                <div class="demerg-input-and-label">
-                                    <ui5-label for="input-transfer-proposal-destination-address" required>Destination Address:</ui5-label>
-                                    <ui5-input id="input-transfer-proposal-destination-address"></ui5-input>
-                                </div>
-                            </div>
-    
-                            <div class="demerg-input">
-                                <div class="demerg-input-and-label">
-                                    <ui5-label for="input-transfer-proposal-amount" required>Amount:</ui5-label>
-                                    <sp-theme scale="large">
-                                        <sp-number-field
-                                            id="input-transfer-proposal-amount"
-                                            style="width: 200px"
-                                            value="0"
-                                            format-options='{ "style": "currency", "currency": "ICP" }'
-                                            min="0"
-                                            max="${state.balance.loading === true ? 0 : Number(state.balance.value * 10000n / BigInt(10**8)) / 10000}"
-                                        ></sp-number-field>
-                                    </sp-theme>
-                                </div>
-                            </div>
-                        </section>
-    
-                        <div slot="footer" class="dialog-footer">
-                            <div class="dialog-footer-space"></div>
-                            <ui5-busy-indicator
-                                size="Small"
-                                .active=${state.creatingTransferProposal}
-                                delay="0"
-                            >
-                                <ui5-button
-                                    class="dialog-footer-main-button"
-                                    design="Emphasized"
-                                    @click=${() => this.handleCreateTransferProposalClick()}
-                                >
-                                    Create
-                                </ui5-button>
-                            </ui5-busy-indicator>
-
-                            <ui5-button @click=${() => this.store.hideCreateTransferProposal = true}>Cancel</ui5-button>
-                        </div>
-                    </ui5-dialog>
-                ` : ''}
+                <div class="proposals-container">
+                    <demerg-transfers
+                        .backend=${state.backend}
+                    ></demerg-transfers>
+                </div>
 
                 <ui5-card class="proposals-container">
                     <ui5-card-header title-text="Threshold" subtitle-text="${thresholdSubtitleText}">
@@ -1675,7 +1313,7 @@ class DemergApp extends HTMLElement {
 
 window.customElements.define('demerg-app', DemergApp);
 
-function sortCreatedAtDescending<T extends { created_at: nat64 }>(proposals: T[]): T[] {
+export function sortCreatedAtDescending<T extends { created_at: nat64 }>(proposals: T[]): T[] {
     return [...proposals].sort((a, b) => {
         if (a.created_at > b.created_at) {
             return -1;

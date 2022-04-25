@@ -3,16 +3,12 @@ import {
     render as litRender
 } from 'lit-html';
 import { createObjectStore } from 'reduxular';
-import {
-    nat64,
-    nat8
-} from 'azle';
 
 type State = {};
 
 const InitialState: State = {};
 
-class DemergProposalThreshold extends HTMLElement {
+class DemergSigners extends HTMLElement {
     shadow = this.attachShadow({
         mode: 'closed'
     });
@@ -23,4 +19,4 @@ class DemergProposalThreshold extends HTMLElement {
     }
 }
 
-window.customElements.define('demerg-proposal-threshold', DemergProposalThreshold);
+window.customElements.define('demerg-signers', DemergSigners);
