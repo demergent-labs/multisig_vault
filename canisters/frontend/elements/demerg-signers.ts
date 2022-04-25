@@ -161,14 +161,11 @@ class DemergSigners extends HTMLElement {
             this.handleError(error);
         }
 
-        // TODO this is technically a memory leak, but probably won't be an issue
-        // TODO we could also just delete the property and do a manually dispatch
-        this.store.votingOnProposals = {
-            [signerProposalId]: {
-                adopting: false,
-                rejecting: false
-            }
-        };
+        delete this.store.votingOnProposals[signerProposalId];
+
+        this.store.dispatch({
+            type: 'RENDER'
+        });
     }
 
     async loadSigners() {

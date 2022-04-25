@@ -159,13 +159,11 @@ class DemergTransfers extends HTMLElement {
             this.handleError(error);
         }
 
-        // TODO this is technically a memory leak, but probably won't be an issue
-        this.store.votingOnProposals = {
-            [transferProposalId]: {
-                adopting: false,
-                rejecting: false
-            }
-        };
+        delete this.store.votingOnProposals[transferProposalId];
+
+        this.store.dispatch({
+            type: 'RENDER'
+        });
     }
 
     async loadBalance() {
