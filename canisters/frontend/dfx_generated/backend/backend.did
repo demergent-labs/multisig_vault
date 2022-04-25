@@ -41,7 +41,7 @@ type TransferProposal = record {
     "created_at": nat64;
     "proposer": principal;
     "description": text;
-    "destinationAddress": text;
+    "destination_address": text;
     "amount": nat64;
     "votes": vec Vote;
     "adopted": bool;
@@ -130,21 +130,21 @@ type CanisterStatus = variant { "running": null; "stopping": null; "stopped": nu
 
 service: (vec principal, nat8) -> {
     "get_cycle_stats_info": () -> (CycleStatsInfo) query;
-    "getSigners": () -> (vec principal) query;
-    "getSignerProposals": () -> (vec SignerProposal) query;
-    "getThreshold": () -> (nat8) query;
-    "getThresholdProposals": () -> (vec ThresholdProposal) query;
-    "getTransfers": () -> (vec Transfer) query;
-    "getTransferProposals": () -> (vec TransferProposal) query;
-    "getCanisterPrincipal": () -> (text) query;
-    "getCanisterAddress": () -> (text) query;
+    "get_signers": () -> (vec principal) query;
+    "get_signer_proposals": () -> (vec SignerProposal) query;
+    "get_threshold": () -> (nat8) query;
+    "get_threshold_proposals": () -> (vec ThresholdProposal) query;
+    "get_transfers": () -> (vec Transfer) query;
+    "get_transfer_proposals": () -> (vec TransferProposal) query;
+    "get_canister_principal": () -> (text) query;
+    "get_canister_address": () -> (text) query;
     "snapshot_cycles": () -> (DefaultResult);
-    "proposeSigner": (text, principal, bool) -> (DefaultResult);
-    "voteOnSignerProposal": (text, bool) -> (VoteOnProposalResult);
-    "proposeThreshold": (text, nat8) -> (DefaultResult);
-    "voteOnThresholdProposal": (text, bool) -> (VoteOnProposalResult);
-    "proposeTransfer": (text, text, nat64) -> (DefaultResult);
-    "voteOnTransferProposal": (text, bool) -> (VoteOnProposalResult);
+    "propose_signer": (text, principal, bool) -> (DefaultResult);
+    "vote_on_signer_proposal": (text, bool) -> (VoteOnProposalResult);
+    "propose_threshold": (text, nat8) -> (DefaultResult);
+    "vote_on_threshold_proposal": (text, bool) -> (VoteOnProposalResult);
+    "propose_transfer": (text, text, nat64) -> (DefaultResult);
+    "vote_on_transfer_proposal": (text, bool) -> (VoteOnProposalResult);
     "getVaultBalance": () -> (VaultBalanceResult);
     "get_controllers_info": () -> (ControllersInfoResult);
 }

@@ -1,5 +1,5 @@
 import { nat8 } from 'azle';
-import { sortCreatedAtDescending } from './demerg-app';
+import { sort_created_at_descending } from './demerg-app';
 import {
     InitialState as DemergAppInitialState,
     State as DemergAppState
@@ -36,19 +36,19 @@ import '@ui5/webcomponents-icons/dist/refresh.js';
 
 type State = {
     backend: DemergAppState['backend'];
-    creatingThresholdProposal: boolean;
-    errorMessage: string;
-    hideCreateThresholdProposal: boolean;
-    hideOpenThresholdProposals: boolean;
-    loadingThresholdProposals: boolean;
-    showErrorDialog: boolean;
+    creating_threshold_proposal: boolean;
+    error_message: string;
+    hide_create_threshold_proposal: boolean;
+    hide_open_threshold_proposals: boolean;
+    loading_threshold_proposals: boolean;
+    show_error_dialog: boolean;
     signers: DemergAppState['signers'];
     threshold: {
         loading: boolean;
         value: nat8;
     };
-    thresholdProposals: ThresholdProposal[];
-    votingOnProposals: {
+    threshold_proposals: ThresholdProposal[];
+    voting_on_proposals: {
         [proposalId: string]: {
             adopting: boolean;
             rejecting: boolean;
@@ -58,19 +58,19 @@ type State = {
 
 const InitialState: State = {
     backend: DemergAppInitialState.backend,
-    creatingThresholdProposal: false,
-    errorMessage: '',
-    hideCreateThresholdProposal: true,
-    hideOpenThresholdProposals: false,
-    loadingThresholdProposals: false,
-    showErrorDialog: false,
+    creating_threshold_proposal: false,
+    error_message: '',
+    hide_create_threshold_proposal: true,
+    hide_open_threshold_proposals: false,
+    loading_threshold_proposals: false,
+    show_error_dialog: false,
     signers: DemergAppInitialState.signers,
     threshold: {
         loading: true,
         value: 0
     },
-    thresholdProposals: [],
-    votingOnProposals: {}
+    threshold_proposals: [],
+    voting_on_proposals: {}
 };
 
 class DemergThreshold extends HTMLElement {
@@ -90,51 +90,51 @@ class DemergThreshold extends HTMLElement {
             return;
         }
 
-        this.loadThreshold();
-        this.loadThresholdProposals();
+        this.load_threshold();
+        this.load_threshold_proposals();
     }
 
-    async handleCreateThresholdProposalClick() {
+    async handle_create_threshold_proposal_click() {
         if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
+            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.show_error_dialog = true;
 
             return;
         }
 
-        this.store.creatingThresholdProposal = true;
+        this.store.creating_threshold_proposal = true;
 
         try {
             const description = (this.shadow.querySelector('#input-threshold-proposal-description') as any).value as string;
             const threshold = (this.shadow.querySelector('#input-threshold-proposal-threshold') as any).value as number;
 
-            const result = await this.store.backend.proposeThreshold(description, threshold);
+            const result = await this.store.backend.propose_threshold(description, threshold);
 
             if (result.hasOwnProperty('ok')) {
-                this.loadThresholdProposals();
+                this.load_threshold_proposals();
                 (this.shadow.querySelector('#toast-proposal-created') as any).show();
             }
             else {
-                this.handleError((result as any).err);
+                this.handle_error((result as any).err);
             }
         }
         catch(error) {
-            this.handleError(error);
+            this.handle_error(error);
         }
         
-        this.store.hideCreateThresholdProposal = true;
-        this.store.creatingThresholdProposal = false;
+        this.store.hide_create_threshold_proposal = true;
+        this.store.creating_threshold_proposal = false;
     }
 
-    async handleVoteOnThresholdProposalClick(thresholdProposalId: string, adopt: boolean) {
+    async handle_vote_on_threshold_proposal_click(thresholdProposalId: string, adopt: boolean) {
         if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
+            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.show_error_dialog = true;
 
             return;
         }
 
-        this.store.votingOnProposals = {
+        this.store.voting_on_proposals = {
             [thresholdProposalId]: {
                 adopting: adopt === true,
                 rejecting: adopt === false
@@ -142,37 +142,37 @@ class DemergThreshold extends HTMLElement {
         };
 
         try {
-            const result = await this.store.backend.voteOnThresholdProposal(thresholdProposalId, adopt);
+            const result = await this.store.backend.vote_on_threshold_proposal(thresholdProposalId, adopt);
 
             if (result.hasOwnProperty('ok')) {
-                this.loadThreshold();
-                this.loadThresholdProposals();
+                this.load_threshold();
+                this.load_threshold_proposals();
                 (this.shadow.querySelector('#toast-vote-recorded') as any).show();
             }
             else {
-                this.handleError((result as any).err);
+                this.handle_error((result as any).err);
             }
         }
         catch(error) {
-            this.handleError(error);
+            this.handle_error(error);
         }
 
-        delete this.store.votingOnProposals[thresholdProposalId];
+        delete this.store.voting_on_proposals[thresholdProposalId];
 
         this.store.dispatch({
             type: 'RENDER'
         });
     }
 
-    async loadThreshold() {
+    async load_threshold() {
         if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
+            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.show_error_dialog = true;
 
             return;
         }
 
-        const threshold = await this.store.backend.getThreshold();
+        const threshold = await this.store.backend.get_threshold();
 
         this.store.threshold = {
             loading: false,
@@ -180,62 +180,62 @@ class DemergThreshold extends HTMLElement {
         };
     }
 
-    async loadThresholdProposals() {
+    async load_threshold_proposals() {
         if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
+            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.show_error_dialog = true;
 
             return;
         }
 
-        const thresholdProposals = await this.store.backend.getThresholdProposals();
+        const threshold_proposals = await this.store.backend.get_threshold_proposals();
         
-        this.store.thresholdProposals = sortCreatedAtDescending(thresholdProposals);
+        this.store.threshold_proposals = sort_created_at_descending(threshold_proposals);
     }
 
-    handleError(error: any) {
+    handle_error(error: any) {
         console.error(error);
 
         if (error.message !== undefined) {
-            this.store.errorMessage = 'There was an error. See the console for more information.';
+            this.store.error_message = 'There was an error. See the console for more information.';
         }
         else if (error.startsWith('Rejection code')) {
-            this.store.errorMessage = 'There was an error. See the console for more information.';
+            this.store.error_message = 'There was an error. See the console for more information.';
         }
         else {
-            this.store.errorMessage = error;
+            this.store.error_message = error;
         }
 
-        this.store.showErrorDialog = true;
+        this.store.show_error_dialog = true;
     }
 
     render(state: State) {
-        const thresholdSubtitleText = state.threshold.loading === true || state.signers.loading === true ? 'Loading...' : `${state.threshold.value} of ${state.signers.value.length} signers required`;
+        const threshold_subtitle_text = state.threshold.loading === true || state.signers.loading === true ? 'Loading...' : `${state.threshold.value} of ${state.signers.value.length} signers required`;
 
         return html`
             <link rel="stylesheet" href="/index.css">
 
             <ui5-card>
-                <ui5-card-header title-text="Threshold" subtitle-text="${thresholdSubtitleText}">
+                <ui5-card-header title-text="Threshold" subtitle-text="${threshold_subtitle_text}">
                     <div class="card-header-action-container" slot="action">
                         <ui5-button
                             class="table-main-button"
                             design="Emphasized"
-                            @click=${() => this.store.hideCreateThresholdProposal = false}
+                            @click=${() => this.store.hide_create_threshold_proposal = false}
                         >
                             Create Proposal
                         </ui5-button>
 
                         <ui5-button
                             class="table-main-button"
-                            ?hidden=${!state.hideOpenThresholdProposals}
+                            ?hidden=${!state.hide_open_threshold_proposals}
                             @click=${async () => {
-                                this.store.hideOpenThresholdProposals = false;
+                                this.store.hide_open_threshold_proposals = false;
                                 
                                 
-                                this.store.loadingThresholdProposals = true;
-                                await this.loadThresholdProposals();
-                                this.store.loadingThresholdProposals = false;
+                                this.store.loading_threshold_proposals = true;
+                                await this.load_threshold_proposals();
+                                this.store.loading_threshold_proposals = false;
                             }}
                         >
                             View Open Proposals
@@ -243,13 +243,13 @@ class DemergThreshold extends HTMLElement {
                         
                         <ui5-button
                             class="table-main-button"
-                            ?hidden=${state.hideOpenThresholdProposals}
+                            ?hidden=${state.hide_open_threshold_proposals}
                             @click=${async () => {
-                                this.store.hideOpenThresholdProposals = true;
+                                this.store.hide_open_threshold_proposals = true;
 
-                                this.store.loadingThresholdProposals = true;
-                                await this.loadThresholdProposals();
-                                this.store.loadingThresholdProposals = false;
+                                this.store.loading_threshold_proposals = true;
+                                await this.load_threshold_proposals();
+                                this.store.loading_threshold_proposals = false;
                             }}
                         >
                             View Closed Proposals
@@ -257,19 +257,19 @@ class DemergThreshold extends HTMLElement {
 
                         <ui5-busy-indicator
                             size="Small"
-                            .active=${state.loadingThresholdProposals}
+                            .active=${state.loading_threshold_proposals}
                             delay="0"
                         >
                             <ui5-button
                                 @click=${async () => {
-                                    this.store.loadingThresholdProposals = true;
+                                    this.store.loading_threshold_proposals = true;
 
                                     await Promise.all([
-                                        this.loadThreshold(),
-                                        this.loadThresholdProposals()
+                                        this.load_threshold(),
+                                        this.load_threshold_proposals()
                                     ]);
 
-                                    this.store.loadingThresholdProposals = false;
+                                    this.store.loading_threshold_proposals = false;
                                 }}
                             >
                                 <ui5-icon name="refresh"></ui5-icon>
@@ -280,9 +280,9 @@ class DemergThreshold extends HTMLElement {
 
                 <ui5-table
                     class="proposals-table"
-                    no-data-text="No ${state.hideOpenThresholdProposals === true ? 'closed' : 'open'} proposals"
+                    no-data-text="No ${state.hide_open_threshold_proposals === true ? 'closed' : 'open'} proposals"
                 >
-                    ${state.hideOpenThresholdProposals === false ? html`
+                    ${state.hide_open_threshold_proposals === false ? html`
                         <ui5-table-column slot="columns" demand-popin></ui5-table-column>
                     ` : ''}
 
@@ -318,34 +318,34 @@ class DemergThreshold extends HTMLElement {
                         <ui5-label>Status</ui5-label>
                     </ui5-table-column>
 
-                    ${state.thresholdProposals.filter((thresholdProposal) => {
-                        const open = thresholdProposal.adopted === false && thresholdProposal.rejected === false;
-                        const hidden = (open && state.hideOpenThresholdProposals === true) || (!open && state.hideOpenThresholdProposals === false);
+                    ${state.threshold_proposals.filter((threshold_proposal) => {
+                        const open = threshold_proposal.adopted === false && threshold_proposal.rejected === false;
+                        const hidden = (open && state.hide_open_threshold_proposals === true) || (!open && state.hide_open_threshold_proposals === false);
 
                         return hidden === false;
-                    }).map((thresholdProposal) => {
-                        const idTrimmed = `${thresholdProposal.id.slice(0, 5)}...${thresholdProposal.id.slice(thresholdProposal.id.length - 5, thresholdProposal.id.length)}`;
-                        const proposerTrimmed = `${thresholdProposal.proposer.toString().slice(0, 5)}...${thresholdProposal.proposer.toString().slice(thresholdProposal.proposer.toString().length - 5, thresholdProposal.proposer.toString().length)}`;
+                    }).map((threshold_proposal) => {
+                        const id_trimmed = `${threshold_proposal.id.slice(0, 5)}...${threshold_proposal.id.slice(threshold_proposal.id.length - 5, threshold_proposal.id.length)}`;
+                        const proposer_trimmed = `${threshold_proposal.proposer.toString().slice(0, 5)}...${threshold_proposal.proposer.toString().slice(threshold_proposal.proposer.toString().length - 5, threshold_proposal.proposer.toString().length)}`;
 
-                        const votesFor = thresholdProposal.votes.filter((vote) => vote.adopt === true).length;
-                        const votesAgainst = thresholdProposal.votes.filter((vote) => vote.adopt === false).length;
+                        const votes_for = threshold_proposal.votes.filter((vote) => vote.adopt === true).length;
+                        const votes_against = threshold_proposal.votes.filter((vote) => vote.adopt === false).length;
 
-                        const status = thresholdProposal.adopted === true ?
-                            `Adopted ${new Date(Number((thresholdProposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : thresholdProposal.rejected === true ?
-                                `Rejected ${new Date(Number((thresholdProposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
+                        const status = threshold_proposal.adopted === true ?
+                            `Adopted ${new Date(Number((threshold_proposal.adopted_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : threshold_proposal.rejected === true ?
+                                `Rejected ${new Date(Number((threshold_proposal.rejected_at[0] ?? 0n) / 1000000n)).toLocaleString()}` : 'Open';
 
                         return html`
                             <ui5-table-row>
-                                ${state.hideOpenThresholdProposals === false ? html`
+                                ${state.hide_open_threshold_proposals === false ? html`
                                     <ui5-table-cell>
                                         <ui5-busy-indicator
                                             size="Small"
-                                            .active=${state.votingOnProposals[thresholdProposal.id]?.adopting}
+                                            .active=${state.voting_on_proposals[threshold_proposal.id]?.adopting}
                                             delay="0"
                                         >
                                             <ui5-button
                                                 design="Positive"
-                                                @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, true)}
+                                                @click=${() => this.handle_vote_on_threshold_proposal_click(threshold_proposal.id, true)}
                                             >
                                                 Adopt
                                             </ui5-button>
@@ -353,12 +353,12 @@ class DemergThreshold extends HTMLElement {
 
                                         <ui5-busy-indicator
                                             size="Small"
-                                            .active=${state.votingOnProposals[thresholdProposal.id]?.rejecting}
+                                            .active=${state.voting_on_proposals[threshold_proposal.id]?.rejecting}
                                             delay="0"
                                         >
                                             <ui5-button
                                                 design="Negative"
-                                                @click=${() => this.handleVoteOnThresholdProposalClick(thresholdProposal.id, false)}
+                                                @click=${() => this.handle_vote_on_threshold_proposal_click(threshold_proposal.id, false)}
                                             >
                                                 Reject
                                             </ui5-button>
@@ -367,31 +367,31 @@ class DemergThreshold extends HTMLElement {
                                 ` : ''}
 
                                 <ui5-table-cell>
-                                    <ui5-label title="${thresholdProposal.id}">${idTrimmed}</ui5-label>
+                                    <ui5-label title="${threshold_proposal.id}">${id_trimmed}</ui5-label>
                                 </ui5-table-cell>
 
                                 <ui5-table-cell>
-                                    <ui5-label>${new Date(Number(thresholdProposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
+                                    <ui5-label>${new Date(Number(threshold_proposal.created_at / 1000000n)).toLocaleString()}</ui5-label>
                                 </ui5-table-cell>
 
                                 <ui5-table-cell>
-                                    <ui5-label title="${thresholdProposal.proposer}">${proposerTrimmed}</ui5-label>
+                                    <ui5-label title="${threshold_proposal.proposer}">${proposer_trimmed}</ui5-label>
                                 </ui5-table-cell>
 
                                 <ui5-table-cell>
-                                    <ui5-label>${thresholdProposal.description}</ui5-label>
+                                    <ui5-label>${threshold_proposal.description}</ui5-label>
                                 </ui5-table-cell>
 
                                 <ui5-table-cell>
-                                    <ui5-label>${thresholdProposal.threshold}</ui5-label>
+                                    <ui5-label>${threshold_proposal.threshold}</ui5-label>
                                 </ui5-table-cell>
 
                                 <ui5-table-cell>
-                                    <ui5-label>${votesFor}</ui5-label>
+                                    <ui5-label>${votes_for}</ui5-label>
                                 </ui5-table-cell>
 
                                 <ui5-table-cell>
-                                    <ui5-label>${votesAgainst}</ui5-label>
+                                    <ui5-label>${votes_against}</ui5-label>
                                 </ui5-table-cell>
 
                                 <ui5-table-cell>
@@ -403,7 +403,7 @@ class DemergThreshold extends HTMLElement {
                 </ui5-table>
             </ui5-card>
 
-            ${state.hideCreateThresholdProposal === false ? html`
+            ${state.hide_create_threshold_proposal === false ? html`
                 <ui5-dialog
                     header-text="Threshold Proposal"
                     .open=${true}
@@ -437,19 +437,19 @@ class DemergThreshold extends HTMLElement {
 
                         <ui5-button
                             class="dialog-footer-main-button"
-                            @click=${() => this.store.hideCreateThresholdProposal = true}
+                            @click=${() => this.store.hide_create_threshold_proposal = true}
                         >
                             Cancel
                         </ui5-button>
 
                         <ui5-busy-indicator
                             size="Small"
-                            .active=${state.creatingThresholdProposal}
+                            .active=${state.creating_threshold_proposal}
                             delay="0"
                         >
                             <ui5-button
                                 design="Emphasized"
-                                @click=${() => this.handleCreateThresholdProposalClick()}
+                                @click=${() => this.handle_create_threshold_proposal_click()}
                             >
                                 Create
                             </ui5-button>
@@ -463,15 +463,15 @@ class DemergThreshold extends HTMLElement {
 
             <ui5-dialog
                 header-text="Error"
-                .open=${state.showErrorDialog}
+                .open=${state.show_error_dialog}
             >   
-                <div>${state.errorMessage}</div>
+                <div>${state.error_message}</div>
                 <div slot="footer" class="dialog-footer">
                     <div class="dialog-footer-space"></div>
                     <ui5-button
                         @click=${() => {
-                            this.store.showErrorDialog = false;
-                            this.store.errorMessage = '';
+                            this.store.show_error_dialog = false;
+                            this.store.error_message = '';
                         }}
                     >
                         Ok

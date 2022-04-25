@@ -97,10 +97,10 @@ export interface TransferFee { 'transfer_fee' : Tokens }
 export type TransferFeeArg = {};
 export interface TransferProposal {
   'id' : string,
+  'destination_address' : string,
   'rejected_at' : [] | [bigint],
   'adopted_at' : [] | [bigint],
   'votes' : Array<Vote>,
-  'destinationAddress' : string,
   'description' : string,
   'created_at' : bigint,
   'rejected' : boolean,
@@ -119,34 +119,36 @@ export type VoteOnProposalAction = { 'voted' : null } |
 export type VoteOnProposalResult = { 'ok' : VoteOnProposalAction } |
   { 'err' : string };
 export interface _SERVICE {
-  'getCanisterAddress' : () => Promise<string>,
-  'getCanisterPrincipal' : () => Promise<string>,
-  'getSignerProposals' : () => Promise<Array<SignerProposal>>,
-  'getSigners' : () => Promise<Array<Principal>>,
-  'getThreshold' : () => Promise<number>,
-  'getThresholdProposals' : () => Promise<Array<ThresholdProposal>>,
-  'getTransferProposals' : () => Promise<Array<TransferProposal>>,
-  'getTransfers' : () => Promise<Array<Transfer>>,
   'getVaultBalance' : () => Promise<VaultBalanceResult>,
+  'get_canister_address' : () => Promise<string>,
+  'get_canister_principal' : () => Promise<string>,
   'get_controllers_info' : () => Promise<ControllersInfoResult>,
   'get_cycle_stats_info' : () => Promise<CycleStatsInfo>,
-  'proposeSigner' : (
+  'get_signer_proposals' : () => Promise<Array<SignerProposal>>,
+  'get_signers' : () => Promise<Array<Principal>>,
+  'get_threshold' : () => Promise<number>,
+  'get_threshold_proposals' : () => Promise<Array<ThresholdProposal>>,
+  'get_transfer_proposals' : () => Promise<Array<TransferProposal>>,
+  'get_transfers' : () => Promise<Array<Transfer>>,
+  'propose_signer' : (
       arg_0: string,
       arg_1: Principal,
       arg_2: boolean,
     ) => Promise<DefaultResult>,
-  'proposeThreshold' : (arg_0: string, arg_1: number) => Promise<DefaultResult>,
-  'proposeTransfer' : (arg_0: string, arg_1: string, arg_2: bigint) => Promise<
+  'propose_threshold' : (arg_0: string, arg_1: number) => Promise<
+      DefaultResult
+    >,
+  'propose_transfer' : (arg_0: string, arg_1: string, arg_2: bigint) => Promise<
       DefaultResult
     >,
   'snapshot_cycles' : () => Promise<DefaultResult>,
-  'voteOnSignerProposal' : (arg_0: string, arg_1: boolean) => Promise<
+  'vote_on_signer_proposal' : (arg_0: string, arg_1: boolean) => Promise<
       VoteOnProposalResult
     >,
-  'voteOnThresholdProposal' : (arg_0: string, arg_1: boolean) => Promise<
+  'vote_on_threshold_proposal' : (arg_0: string, arg_1: boolean) => Promise<
       VoteOnProposalResult
     >,
-  'voteOnTransferProposal' : (arg_0: string, arg_1: boolean) => Promise<
+  'vote_on_transfer_proposal' : (arg_0: string, arg_1: boolean) => Promise<
       VoteOnProposalResult
     >,
 }

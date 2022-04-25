@@ -36,9 +36,9 @@ type State = {
     };
     controllers_info: ControllersInfo | null;
     cycles_stats_info: CycleStatsInfo | null;
-    errorMessage: string;
-    loadingCycles: boolean;
-    showErrorDialog: boolean;
+    error_message: string;
+    loading_cycles: boolean;
+    show_error_dialog: boolean;
 };
 
 const InitialState: State = {
@@ -53,9 +53,9 @@ const InitialState: State = {
     },
     controllers_info: null,
     cycles_stats_info: null,
-    errorMessage: '',
-    loadingCycles: false,
-    showErrorDialog: false
+    error_message: '',
+    loading_cycles: false,
+    show_error_dialog: false
 
 };
 
@@ -76,21 +76,21 @@ class DemergStatsAndInfo extends HTMLElement {
             return;
         }
 
-        this.loadCanisterAddress();
-        this.loadCanisterPrincipal();
-        this.loadControllersInfo();
-        this.loadCycleStats();
+        this.load_canister_address();
+        this.load_canister_principal();
+        this.load_controllers_info();
+        this.load_cycle_stats();
     }
 
-    async loadCanisterAddress() {
+    async load_canister_address() {
         if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
+            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.show_error_dialog = true;
 
             return;
         }
 
-        const address = await this.store.backend.getCanisterAddress();
+        const address = await this.store.backend.get_canister_address();
 
         this.store.canister_address = {
             loading: false,
@@ -98,15 +98,15 @@ class DemergStatsAndInfo extends HTMLElement {
         };
     }
 
-    async loadCanisterPrincipal() {
+    async load_canister_principal() {
         if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
+            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.show_error_dialog = true;
 
             return;
         }
 
-        const principal = await this.store.backend.getCanisterPrincipal();
+        const principal = await this.store.backend.get_canister_principal();
 
         this.store.canister_principal = {
             loading: false,
@@ -114,10 +114,10 @@ class DemergStatsAndInfo extends HTMLElement {
         };
     }
 
-    async loadControllersInfo() {
+    async load_controllers_info() {
         if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
+            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.show_error_dialog = true;
 
             return;
         }
@@ -128,28 +128,28 @@ class DemergStatsAndInfo extends HTMLElement {
             this.store.controllers_info = controllers_info_result.ok;
         }
         else {
-            this.handleError((controllers_info_result as any).err);
+            this.handle_error((controllers_info_result as any).err);
         }
     }
 
-    async loadCycleStats() {
+    async load_cycle_stats() {
         if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
+            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.show_error_dialog = true;
 
             return;
         }
         
-        await this.snapshotCycles();
+        await this.snapshot_cycles();
         const cycleStatsInfo = await this.store.backend.get_cycle_stats_info();
 
         this.store.cycles_stats_info = cycleStatsInfo;
     }
 
-    async snapshotCycles() {
+    async snapshot_cycles() {
         if (this.store.backend === null) {
-            this.store.errorMessage = 'You are not authenticated, please refresh.'
-            this.store.showErrorDialog = true;
+            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.show_error_dialog = true;
 
             return;
         }
@@ -157,28 +157,28 @@ class DemergStatsAndInfo extends HTMLElement {
         const result = await this.store.backend.snapshot_cycles();
 
         if (result.hasOwnProperty('err')) {
-            this.handleError((result as any).err);
+            this.handle_error((result as any).err);
         }
     }
 
-    handleError(error: any) {
+    handle_error(error: any) {
         console.error(error);
 
         if (error.message !== undefined) {
-            this.store.errorMessage = 'There was an error. See the console for more information.';
+            this.store.error_message = 'There was an error. See the console for more information.';
         }
         else if (error.startsWith('Rejection code')) {
-            this.store.errorMessage = 'There was an error. See the console for more information.';
+            this.store.error_message = 'There was an error. See the console for more information.';
         }
         else {
-            this.store.errorMessage = error;
+            this.store.error_message = error;
         }
 
-        this.store.showErrorDialog = true;
+        this.store.show_error_dialog = true;
     }
 
     render(state: State) {
-        const canisterAddressText = state.canister_address.loading === true ? 'Loading...' : state.canister_address.value;
+        const canister_address_text = state.canister_address.loading === true ? 'Loading...' : state.canister_address.value;
 
         const frontend_cycles_remaining = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_remaining);
         const frontend_cycle_time_remaining = state.cycles_stats_info === null ? 'Loading...' : nanoseconds_to_time_remaining_string(state.cycles_stats_info.frontend.cycle_time_remaining);
@@ -208,16 +208,16 @@ class DemergStatsAndInfo extends HTMLElement {
                     <div class="card-header-action-container" slot="action">
                         <ui5-busy-indicator
                             size="Small"
-                            .active=${state.loadingCycles}
+                            .active=${state.loading_cycles}
                             delay="0"
                         >
                             <ui5-button
                                 design="Emphasized"
                                 class="table-main-button"
                                 @click=${async () => {
-                                    this.store.loadingCycles =  true;
-                                    await this.loadCycleStats();
-                                    this.store.loadingCycles = false;
+                                    this.store.loading_cycles =  true;
+                                    await this.load_cycle_stats();
+                                    this.store.loading_cycles = false;
                                 }}
                             >
                                 Recalculate
@@ -379,7 +379,7 @@ class DemergStatsAndInfo extends HTMLElement {
                         </ui5-table-cell>
 
                         <ui5-table-cell>
-                            <ui5-label>${canisterAddressText}</ui5-label>
+                            <ui5-label>${canister_address_text}</ui5-label>
                         </ui5-table-cell>
 
                         <ui5-table-cell>

@@ -7,7 +7,7 @@ import {
     UpdateAsync
 } from 'azle';
 import {
-    binaryAddressFromPrincipal,
+    binary_address_from_principal,
     Tokens,
     TransferFee
 } from 'azle/canisters/icp';
@@ -17,7 +17,7 @@ import {
     ICPCanister
 } from '../backend';
 import { sha224 } from 'hash.js';
-import { isSigner } from '../signers';
+import { is_signer } from '../signers';
 import {
     Address,
     DefaultMutator,
@@ -25,21 +25,21 @@ import {
     ProposeTransferChecksResult
 } from '../types';
 
-export function* proposeTransfer(
+export function* propose_transfer(
     description: string,
-    destinationAddress: string,
+    destination_address: string,
     amount: nat64
 ): UpdateAsync<DefaultResult> {
     const caller = ic.caller();
 
     // TODO because we perform the cross-canister calls before the checks, a non-signer could DoS with many cross-canister calls
     const account_balance_result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
-        account: binaryAddressFromPrincipal(ic.id(), 0)
+        account: binary_address_from_principal(ic.id(), 0)
     });
     const transfer_fee_result: CanisterResult<TransferFee> = yield ICPCanister.transfer_fee({});
     const randomness_canister_result: CanisterResult<nat8[]> = yield ic.canisters.Management<Management>('aaaaa-aa').raw_rand();
 
-    const checks_result = performChecks(
+    const checks_result = perform_checks(
         caller,
         amount,
         account_balance_result,
@@ -55,11 +55,11 @@ export function* proposeTransfer(
 
     const randomness = checks_result.ok.randomness;
 
-    const mutator = getMutator(
+    const mutator = get_mutator(
         caller,
         randomness,
         description,
-        destinationAddress,
+        destination_address,
         amount
     );
 
@@ -68,14 +68,14 @@ export function* proposeTransfer(
     return mutator_result;
 }
 
-function performChecks(
+function perform_checks(
     caller: Principal,
     amount: nat64,
     account_balance_result: CanisterResult<Tokens>,
     transfer_fee_result: CanisterResult<TransferFee>,
     randomness_canister_result: CanisterResult<nat8[]>
 ): ProposeTransferChecksResult {
-    if (isSigner(caller) === false) {
+    if (is_signer(caller) === false) {
         return {
             err: 'Only signers can create a proposal'
         };
@@ -117,22 +117,22 @@ function performChecks(
     };
 }
 
-function getMutator(
+function get_mutator(
     caller: Principal,
     randomness: nat8[],
     description: string,
-    destinationAddress: Address,
+    destination_address: Address,
     amount: nat64
 ): DefaultMutator {
     return () => {
         const id = sha224().update(randomness).digest('hex');
 
-        state.transferProposals[id] = {
+        state.transfer_proposals[id] = {
             id,
             created_at: ic.time(),
             proposer: caller,
             description,
-            destinationAddress,
+            destination_address,
             amount,
             votes: [],
             adopted: false,

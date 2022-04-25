@@ -12,17 +12,17 @@ export type State = {
     signers: {
         [principal: Principal]: Principal | undefined;
     };
-    signerProposals: {
+    signer_proposals: {
         [id: string]: SignerProposal | undefined;
     };
     transfers: {
         [id: string]: Transfer | undefined;
     };
-    transferProposals: {
+    transfer_proposals: {
         [id: string]: TransferProposal | undefined;
     };
     threshold: nat8;
-    thresholdProposals: {
+    threshold_proposals: {
         [id: string]: ThresholdProposal | undefined;
     };
 };
@@ -59,7 +59,7 @@ export type TransferProposal = {
     created_at: nat64;
     proposer: Principal;
     description: string;
-    destinationAddress: Address;
+    destination_address: Address;
     amount: nat64;
     votes: Vote[];
     adopted: boolean;

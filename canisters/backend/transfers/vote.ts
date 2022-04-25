@@ -7,7 +7,7 @@ import {
     UpdateAsync
 } from 'azle';
 import {
-    binaryAddressFromAddress,
+    binary_address_from_address,
     TransferFee,
     TransferResult
 } from 'azle/canisters/icp';
@@ -15,7 +15,7 @@ import {
     ICPCanister,
     state
 } from '../backend';
-import { isSigner } from '../signers';
+import { is_signer } from '../signers';
 import {
     Vote,
     VoteOnProposalResult,
@@ -23,16 +23,16 @@ import {
     State
 } from '../types';
 
-export function* voteOnTransferProposal(
-    transferProposalId: string,
+export function* vote_on_transfer_proposal(
+    transfer_proposal_id: string,
     adopt: boolean
 ): UpdateAsync<VoteOnProposalResult> {
     const caller = ic.caller();
     
-    const checks_result = performChecks(
+    const checks_result = perform_checks(
         caller,
-        transferProposalId,
-        state.transferProposals
+        transfer_proposal_id,
+        state.transfer_proposals
     );
 
     if (checks_result.ok === undefined) {
@@ -43,20 +43,20 @@ export function* voteOnTransferProposal(
 
     // TODO once we can do cross-canister calls in nested functions
     // TODO redo this section like the other proposal types, with a getMutator
-    let transferProposal = checks_result.ok;
+    let transfer_proposal = checks_result.ok;
 
-    const newVotes: Vote[] = [
-        ...transferProposal.votes,
+    const new_votes: Vote[] = [
+        ...transfer_proposal.votes,
         {
             voter: caller,
             adopt
         }
     ];
 
-    const adoptVotes = newVotes.filter((vote) => vote.adopt === true);
-    const rejectVotes = newVotes.filter((vote) => vote.adopt === false);
+    const adopt_votes = new_votes.filter((vote) => vote.adopt === true);
+    const reject_votes = new_votes.filter((vote) => vote.adopt === false);
 
-    if (adoptVotes.length >= state.threshold) {
+    if (adopt_votes.length >= state.threshold) {
         const transfer_fee_result: CanisterResult<TransferFee> = yield ICPCanister.transfer_fee({});
 
         if (transfer_fee_result.ok === undefined) {
@@ -68,11 +68,11 @@ export function* voteOnTransferProposal(
         const canister_result: CanisterResult<TransferResult> = yield ICPCanister.transfer({
             memo: 0n,
             amount: {
-                e8s: transferProposal.amount,
+                e8s: transfer_proposal.amount,
             },
             fee: transfer_fee_result.ok.transfer_fee,
             from_subaccount: null,
-            to: binaryAddressFromAddress(transferProposal.destinationAddress),
+            to: binary_address_from_address(transfer_proposal.destination_address),
             created_at_time: null
         });
 
@@ -125,9 +125,9 @@ export function* voteOnTransferProposal(
             };
         }
 
-        transferProposal.votes = newVotes;
-        transferProposal.adopted = true;
-        transferProposal.adopted_at = ic.time();
+        transfer_proposal.votes = new_votes;
+        transfer_proposal.adopted = true;
+        transfer_proposal.adopted_at = ic.time();
 
         return {
             ok: {
@@ -136,10 +136,10 @@ export function* voteOnTransferProposal(
         };
     }
 
-    if (rejectVotes.length > Object.keys(state.signers).length - state.threshold) {
-        transferProposal.votes = newVotes;
-        transferProposal.rejected = true;
-        transferProposal.rejected_at = ic.time();
+    if (reject_votes.length > Object.keys(state.signers).length - state.threshold) {
+        transfer_proposal.votes = new_votes;
+        transfer_proposal.rejected = true;
+        transfer_proposal.rejected_at = ic.time();
 
         return {
             ok: {
@@ -148,7 +148,7 @@ export function* voteOnTransferProposal(
         };
     }
 
-    transferProposal.votes = newVotes;
+    transfer_proposal.votes = new_votes;
 
     return {
         ok: {
@@ -157,46 +157,46 @@ export function* voteOnTransferProposal(
     };
 }
 
-function performChecks(
+function perform_checks(
     caller: Principal,
-    transferProposalId: string,
-    transferProposals: State['transferProposals']
+    transfer_proposal_id: string,
+    transfer_proposals: State['transfer_proposals']
 ): VoteOnTransferProposalChecksResult {
-    if (isSigner(caller) === false) {
+    if (is_signer(caller) === false) {
         return {
             err: 'Only signers can vote on proposals'
         };
     }
 
-    const transferProposal = transferProposals[transferProposalId];
+    const transfer_proposal = transfer_proposals[transfer_proposal_id];
 
-    if (transferProposal === undefined) {
+    if (transfer_proposal === undefined) {
         return {
-            err: `No transfer proposal found for transfer proposal id ${transferProposalId}`
+            err: `No transfer proposal found for transfer proposal id ${transfer_proposal_id}`
         };
     }
 
-    if (transferProposal.adopted === true) {
+    if (transfer_proposal.adopted === true) {
         return {
-            err: `Transfer proposal ${transferProposalId} already adopted`
+            err: `Transfer proposal ${transfer_proposal_id} already adopted`
         };
     }
 
-    if (transferProposal.rejected === true) {
+    if (transfer_proposal.rejected === true) {
         return {
-            err: `Transfer proposal ${transferProposalId} already rejected`
+            err: `Transfer proposal ${transfer_proposal_id} already rejected`
         };
     }
 
-    const alreadyVoted = transferProposal.votes.find((vote) => vote.voter === caller) !== undefined;
+    const already_voted = transfer_proposal.votes.find((vote) => vote.voter === caller) !== undefined;
 
-    if (alreadyVoted === true) {
+    if (already_voted === true) {
         return {
             err: `You have already voted on this proposal`
         };
     }
 
     return {
-        ok: transferProposal
+        ok: transfer_proposal
     };
 }

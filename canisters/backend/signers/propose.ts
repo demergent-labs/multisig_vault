@@ -8,21 +8,21 @@ import {
 import { Management } from 'azle/canisters/management';
 import { state } from '../backend';
 import { sha224 } from 'hash.js';
-import { isSigner } from './index';
+import { is_signer } from './index';
 import {
     DefaultMutator,
     DefaultResult,
     State
 } from '../types';
 
-export function* proposeSigner(
+export function* propose_signer(
     description: string,
     signer: Principal,
     remove: boolean
 ): UpdateAsync<DefaultResult> {
     const caller = ic.caller();
 
-    const checks_result = performChecks(
+    const checks_result = perform_checks(
         caller,
         state.signers,
         signer,
@@ -45,7 +45,7 @@ export function* proposeSigner(
 
     const randomness = raw_rand_canister_result.ok;
 
-    const mutator = getMutator(
+    const mutator = get_mutator(
         caller,
         randomness,
         description,
@@ -58,13 +58,13 @@ export function* proposeSigner(
     return mutator_result;
 }
 
-function performChecks(
+function perform_checks(
     caller: Principal,
     signers: State['signers'],
     signer: Principal,
     remove: boolean
 ): DefaultResult {
-    if (isSigner(caller) === false) {
+    if (is_signer(caller) === false) {
         return {
             err: 'Only signers can create a proposal'
         };
@@ -84,7 +84,7 @@ function performChecks(
     };
 }
 
-function getMutator(
+function get_mutator(
     caller: Principal,
     randomness: nat8[],
     description: string,
@@ -94,7 +94,7 @@ function getMutator(
     return () => {
         const id = sha224().update(randomness).digest('hex');
 
-        state.signerProposals[id] = {
+        state.signer_proposals[id] = {
             id,
             created_at: ic.time(),
             proposer: caller,

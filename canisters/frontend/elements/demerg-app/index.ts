@@ -135,7 +135,7 @@ class DemergApp extends HTMLElement {
 
 window.customElements.define('demerg-app', DemergApp);
 
-export function sortCreatedAtDescending<T extends { created_at: nat64 }>(proposals: T[]): T[] {
+export function sort_created_at_descending<T extends { created_at: nat64 }>(proposals: T[]): T[] {
     return [...proposals].sort((a, b) => {
         if (a.created_at > b.created_at) {
             return -1;

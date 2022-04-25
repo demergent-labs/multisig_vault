@@ -5,13 +5,13 @@ import {
 import { state } from '../backend';
 import { ThresholdProposal } from '../types';
 
-export function getThreshold(): Query<nat8> {
+export function get_threshold(): Query<nat8> {
     return state.threshold;
 }
 
-export function getThresholdProposals(): Query<ThresholdProposal[]> {
-    return Object.values(state.thresholdProposals) as ThresholdProposal[];
+export function get_threshold_proposals(): Query<ThresholdProposal[]> {
+    return Object.values(state.threshold_proposals) as ThresholdProposal[];
 }
 
-export { proposeThreshold } from './propose';
-export { voteOnThresholdProposal } from './vote';
+export { propose_threshold } from './propose';
+export { vote_on_threshold_proposal } from './vote';

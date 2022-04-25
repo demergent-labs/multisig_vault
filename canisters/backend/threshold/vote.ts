@@ -4,7 +4,7 @@ import {
     Update
 } from 'azle';
 import { state } from '../backend';
-import { isSigner } from '../signers';
+import { is_signer } from '../signers';
 import {
     State,
     ThresholdProposal,
@@ -14,19 +14,19 @@ import {
     VoteOnThresholdProposalChecksResult
 } from '../types';
 
-export function voteOnThresholdProposal(
-    thresholdProposalId: string,
+export function vote_on_threshold_proposal(
+    threshold_proposal_id: string,
     adopt: boolean
 ): Update<VoteOnProposalResult> {
     const caller = ic.caller();
 
-    const checks_result = performChecks(
+    const checks_result = perform_checks(
         adopt,
         caller,
-        thresholdProposalId,
-        state.thresholdProposals,
+        threshold_proposal_id,
+        state.threshold_proposals,
         state.signers,
-        state.transferProposals
+        state.transfer_proposals
     );
 
     if (checks_result.ok === undefined) {
@@ -35,13 +35,13 @@ export function voteOnThresholdProposal(
         };
     }
 
-    const thresholdProposal = checks_result.ok;
+    const threshold_proposal = checks_result.ok;
 
-    const mutator = getMutator(
+    const mutator = get_mutator(
         caller,
         adopt,
         state,
-        thresholdProposal,
+        threshold_proposal,
         state.threshold,
         state.signers
     );
@@ -51,61 +51,61 @@ export function voteOnThresholdProposal(
     return vote_on_proposal_result;
 }
 
-function performChecks(
+function perform_checks(
     adopt: boolean,
     caller: Principal,
-    thresholdProposalId: string,
-    thresholdProposals: State['thresholdProposals'],
+    threshold_proposal_id: string,
+    threshold_proposals: State['threshold_proposals'],
     signers: State['signers'],
-    transferProposals: State['transferProposals']
+    transfer_proposals: State['transfer_proposals']
 ): VoteOnThresholdProposalChecksResult {
-    if (isSigner(caller) === false) {
+    if (is_signer(caller) === false) {
         return {
             err: 'Only signers can vote on proposals'
         };
     }
 
-    const thresholdProposal = thresholdProposals[thresholdProposalId];
+    const threshold_proposal = threshold_proposals[threshold_proposal_id];
 
-    if (thresholdProposal === undefined) {
+    if (threshold_proposal === undefined) {
         return {
-            err: `No threshold proposal found for threshold proposal id ${thresholdProposalId}`
+            err: `No threshold proposal found for threshold proposal id ${threshold_proposal_id}`
         };
     }
 
-    if (thresholdProposal.adopted === true) {
+    if (threshold_proposal.adopted === true) {
         return {
-            err: `Threshold proposal ${thresholdProposalId} already adopted`
+            err: `Threshold proposal ${threshold_proposal_id} already adopted`
         };
     }
 
-    if (thresholdProposal.rejected === true) {
+    if (threshold_proposal.rejected === true) {
         return {
-            err: `Threshold proposal ${thresholdProposalId} already rejected`
+            err: `Threshold proposal ${threshold_proposal_id} already rejected`
         };
     }
 
-    const alreadyVoted = thresholdProposal.votes.find((vote) => vote.voter === caller) !== undefined;
+    const already_voted = threshold_proposal.votes.find((vote) => vote.voter === caller) !== undefined;
 
-    if (alreadyVoted === true) {
+    if (already_voted === true) {
         return {
             err: `You have already voted on this proposal`
         };
     }
 
-    if (thresholdProposal.threshold === 0) {
+    if (threshold_proposal.threshold === 0) {
         return {
             err: 'Threshold cannot be 0'
         }
     }
 
-    if (thresholdProposal.threshold > Object.keys(signers).length) {
+    if (threshold_proposal.threshold > Object.keys(signers).length) {
         return {
             err: 'Threshold cannot be greater than number of signers'
         };
     }
 
-    const open_transfer_proposals = Object.values(transferProposals).filter((transfer_proposal) => transfer_proposal?.adopted === false && transfer_proposal?.rejected === false);
+    const open_transfer_proposals = Object.values(transfer_proposals).filter((transfer_proposal) => transfer_proposal?.adopted === false && transfer_proposal?.rejected === false);
 
     if (
         adopt === true &&
@@ -117,36 +117,36 @@ function performChecks(
     }
 
     return {
-        ok: thresholdProposal
+        ok: threshold_proposal
     };
 }
 
-function getMutator(
+function get_mutator(
     caller: Principal,
     adopt: boolean,
     state: State,
-    thresholdProposal: ThresholdProposal,
+    threshold_proposal: ThresholdProposal,
     threshold: State['threshold'],
     signers: State['signers']
 ): VoteMutator {
-    const newVotes: Vote[] = [
-        ...thresholdProposal.votes,
+    const new_votes: Vote[] = [
+        ...threshold_proposal.votes,
         {
             voter: caller,
             adopt
         }
     ];
 
-    const adoptVotes = newVotes.filter((vote) => vote.adopt === true);
-    const rejectVotes = newVotes.filter((vote) => vote.adopt === false);
+    const adopt_votes = new_votes.filter((vote) => vote.adopt === true);
+    const reject_votes = new_votes.filter((vote) => vote.adopt === false);
 
-    if (adoptVotes.length >= threshold) {
+    if (adopt_votes.length >= threshold) {
         return () => {
-            state.threshold = thresholdProposal.threshold;
+            state.threshold = threshold_proposal.threshold;
 
-            thresholdProposal.votes = newVotes;
-            thresholdProposal.adopted = true;
-            thresholdProposal.adopted_at = ic.time();
+            threshold_proposal.votes = new_votes;
+            threshold_proposal.adopted = true;
+            threshold_proposal.adopted_at = ic.time();
     
             return {
                 ok: {
@@ -156,11 +156,11 @@ function getMutator(
         };
     }
 
-    if (rejectVotes.length > Object.keys(signers).length - threshold) {
+    if (reject_votes.length > Object.keys(signers).length - threshold) {
         return () => {
-            thresholdProposal.votes = newVotes;
-            thresholdProposal.rejected = true;
-            thresholdProposal.rejected_at = ic.time();
+            threshold_proposal.votes = new_votes;
+            threshold_proposal.rejected = true;
+            threshold_proposal.rejected_at = ic.time();
 
             return {
                 ok: {
@@ -171,7 +171,7 @@ function getMutator(
     }
 
     return () => {
-        thresholdProposal.votes = newVotes;
+        threshold_proposal.votes = new_votes;
 
         return {
             ok: {

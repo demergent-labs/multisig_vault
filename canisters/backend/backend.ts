@@ -8,8 +8,8 @@ import {
     UpdateAsync
 } from 'azle';
 import {
-    binaryAddressFromPrincipal,
-    hexAddressFromPrincipal,
+    binary_address_from_principal,
+    hex_address_from_principal,
     ICP,
     Tokens
 } from 'azle/canisters/icp';
@@ -53,11 +53,11 @@ export let state: State = {
         cycle_snapshots: []
     },
     signers: {},
-    signerProposals: {},
+    signer_proposals: {},
     threshold: 0,
-    thresholdProposals: {},
+    threshold_proposals: {},
     transfers: {},
-    transferProposals: {}
+    transfer_proposals: {}
 };
 
 export function init(
@@ -76,7 +76,7 @@ export function init(
 
 export function* getVaultBalance(): UpdateAsync<VaultBalanceResult> {
     const account_balance_canister_result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
-        account: binaryAddressFromPrincipal(ic.id(), 0)
+        account: binary_address_from_principal(ic.id(), 0)
     });
 
     if (account_balance_canister_result.ok === undefined) {
@@ -90,12 +90,12 @@ export function* getVaultBalance(): UpdateAsync<VaultBalanceResult> {
     };
 }
 
-export function getCanisterPrincipal(): Query<string> {
+export function get_canister_principal(): Query<string> {
     return ic.id();
 }
 
-export function getCanisterAddress(): Query<string> {
-    return hexAddressFromPrincipal(ic.id(), 0);
+export function get_canister_address(): Query<string> {
+    return hex_address_from_principal(ic.id(), 0);
 }
 
 export function* get_controllers_info(): UpdateAsync<ControllersInfoResult> {
@@ -136,20 +136,20 @@ export {
     snapshot_cycles
 } from './cycles';
 export {
-    getSigners,
-    getSignerProposals,
-    proposeSigner,
-    voteOnSignerProposal
+    get_signers,
+    get_signer_proposals,
+    propose_signer,
+    vote_on_signer_proposal
 } from './signers';
 export {
-    getThreshold,
-    getThresholdProposals,
-    proposeThreshold,
-    voteOnThresholdProposal
+    get_threshold,
+    get_threshold_proposals,
+    propose_threshold,
+    vote_on_threshold_proposal
 } from './threshold';
 export {
-    getTransfers,
-    getTransferProposals,
-    proposeTransfer,
-    voteOnTransferProposal
+    get_transfers,
+    get_transfer_proposals,
+    propose_transfer,
+    vote_on_transfer_proposal
 } from './transfers';

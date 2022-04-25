@@ -4,7 +4,7 @@ import {
     Update
 } from 'azle';
 import { state } from '../backend';
-import { isSigner } from './index';
+import { is_signer } from './index';
 import {
     SignerProposal,
     State,
@@ -14,20 +14,20 @@ import {
     VoteOnSignerProposalChecksResult
 } from '../types';
 
-export function voteOnSignerProposal(
-    signerProposalId: string,
+export function vote_on_signer_proposal(
+    signer_proposal_id: string,
     adopt: boolean
 ): Update<VoteOnProposalResult> {
     const caller = ic.caller();
         
-    const checks_result = performChecks(
+    const checks_result = perform_checks(
         adopt,
         caller,
-        signerProposalId,
-        state.signerProposals,
+        signer_proposal_id,
+        state.signer_proposals,
         state.signers,
         state.threshold,
-        state.transferProposals
+        state.transfer_proposals
     );
 
     if (checks_result.ok === undefined) {
@@ -36,12 +36,12 @@ export function voteOnSignerProposal(
         };
     }
 
-    let signerProposal = checks_result.ok;
+    let signer_proposal = checks_result.ok;
 
-    const mutator = getMutator(
+    const mutator = get_mutator(
         caller,
         adopt,
-        signerProposal,
+        signer_proposal,
         state.threshold,
         state.signers
     );
@@ -51,59 +51,59 @@ export function voteOnSignerProposal(
     return vote_on_proposal_result;
 }
 
-function performChecks(
+function perform_checks(
     adopt: boolean,
     caller: Principal,
-    signerProposalId: string,
-    signerProposals: State['signerProposals'],
+    signer_proposal_id: string,
+    signer_proposals: State['signer_proposals'],
     signers: State['signers'],
     threshold: State['threshold'],
-    transferProposals: State['transferProposals']
+    transfer_proposals: State['transfer_proposals']
 ): VoteOnSignerProposalChecksResult {
-    if (isSigner(caller) === false) {
+    if (is_signer(caller) === false) {
         return {
             err: 'Only signers can vote on proposals'
         };
     }
 
-    const signerProposal = signerProposals[signerProposalId];
+    const signer_proposal = signer_proposals[signer_proposal_id];
 
-    if (signerProposal === undefined) {
+    if (signer_proposal === undefined) {
         return {
-            err: `No signer proposal found for signer proposal id ${signerProposalId}`
+            err: `No signer proposal found for signer proposal id ${signer_proposal_id}`
         };
     }
 
-    if (signerProposal.adopted === true) {
+    if (signer_proposal.adopted === true) {
         return {
-            err: `Signer proposal ${signerProposalId} already adopted`
+            err: `Signer proposal ${signer_proposal_id} already adopted`
         };
     }
 
-    if (signerProposal.rejected === true) {
+    if (signer_proposal.rejected === true) {
         return {
-            err: `Signer proposal ${signerProposalId} already rejected`
+            err: `Signer proposal ${signer_proposal_id} already rejected`
         };
     }
 
-    const alreadyVoted = signerProposal.votes.find((vote) => vote.voter === caller) !== undefined;
+    const already_voted = signer_proposal.votes.find((vote) => vote.voter === caller) !== undefined;
 
-    if (alreadyVoted === true) {
+    if (already_voted === true) {
         return {
             err: `You have already voted on this proposal`
         };
     }
 
     if (
-        signerProposal.remove === true &&
-        signers[signerProposal.signer] === undefined
+        signer_proposal.remove === true &&
+        signers[signer_proposal.signer] === undefined
     ) {
         return {
-            err: `Signer ${signerProposal.signer} does not exist`
+            err: `Signer ${signer_proposal.signer} does not exist`
         };
     }
 
-    const open_transfer_proposals = Object.values(transferProposals).filter((transfer_proposal) => transfer_proposal?.adopted === false && transfer_proposal?.rejected === false);
+    const open_transfer_proposals = Object.values(transfer_proposals).filter((transfer_proposal) => transfer_proposal?.adopted === false && transfer_proposal?.rejected === false);
 
     if (
         adopt === true &&
@@ -115,7 +115,7 @@ function performChecks(
     }
 
     if (
-        signerProposal.remove === true &&
+        signer_proposal.remove === true &&
         Object.keys(signers).length - 1 < threshold
     ) {
         return {
@@ -124,40 +124,40 @@ function performChecks(
     }
 
     return {
-        ok: signerProposal
+        ok: signer_proposal
     };
 }
 
-function getMutator(
+function get_mutator(
     caller: Principal,
     adopt: boolean,
-    signerProposal: SignerProposal,
+    signer_proposal: SignerProposal,
     threshold: State['threshold'],
     signers: State['signers']
 ): VoteMutator {
-    const newVotes: Vote[] = [
-        ...signerProposal.votes,
+    const new_votes: Vote[] = [
+        ...signer_proposal.votes,
         {
             voter: caller,
             adopt
         }
     ];
 
-    const adoptVotes = newVotes.filter((vote) => vote.adopt === true);
-    const rejectVotes = newVotes.filter((vote) => vote.adopt === false);
+    const adopt_votes = new_votes.filter((vote) => vote.adopt === true);
+    const reject_votes = new_votes.filter((vote) => vote.adopt === false);
 
-    if (adoptVotes.length >= threshold) {
+    if (adopt_votes.length >= threshold) {
         return () => {
-            if (signerProposal.remove === true) {
-                delete state.signers[signerProposal.signer];
+            if (signer_proposal.remove === true) {
+                delete state.signers[signer_proposal.signer];
             }
             else {
-                state.signers[signerProposal.signer] = signerProposal.signer;
+                state.signers[signer_proposal.signer] = signer_proposal.signer;
             }
     
-            signerProposal.votes = newVotes;
-            signerProposal.adopted = true;
-            signerProposal.adopted_at = ic.time();
+            signer_proposal.votes = new_votes;
+            signer_proposal.adopted = true;
+            signer_proposal.adopted_at = ic.time();
             
             return {
                 ok: {
@@ -167,11 +167,11 @@ function getMutator(
         }
     }
 
-    if (rejectVotes.length > Object.keys(signers).length - threshold) {        
+    if (reject_votes.length > Object.keys(signers).length - threshold) {        
         return () => {
-            signerProposal.votes = newVotes;
-            signerProposal.rejected = true;
-            signerProposal.rejected_at = ic.time();
+            signer_proposal.votes = new_votes;
+            signer_proposal.rejected = true;
+            signer_proposal.rejected_at = ic.time();
 
             return {
                 ok: {
@@ -182,7 +182,7 @@ function getMutator(
     }
 
     return () => {
-        signerProposal.votes = newVotes;
+        signer_proposal.votes = new_votes;
 
         return {
             ok: {

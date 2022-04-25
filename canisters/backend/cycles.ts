@@ -67,11 +67,11 @@ export function* snapshot_cycles(): UpdateAsync<DefaultResult> {
         };
     }
 
-    const canisterStatusResult = canister_result.ok;
+    const canister_status_result = canister_result.ok;
 
     const frontend_cycle_stats = calculate_updated_cycle_stats(
         state.frontend_cycle_stats,
-        canisterStatusResult.cycles
+        canister_status_result.cycles
     );
     const backend_cycle_stats = calculate_updated_cycle_stats(
         state.backend_cycle_stats,
