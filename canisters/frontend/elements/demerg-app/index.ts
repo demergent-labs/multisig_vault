@@ -1,45 +1,28 @@
+import { nat64 } from 'azle';
+import { AuthClient } from '@dfinity/auth-client';
+import { createActor } from '../../dfx_generated/backend';
+import { _SERVICE } from '../../dfx_generated/backend/backend.did';
 import {
     html,
     render as litRender
 } from 'lit-html';
 import { createObjectStore } from 'reduxular';
-import { nat64 } from 'azle';
-import { createActor } from '../dfx_generated/backend';
-import { ActorSubclass } from '@dfinity/agent';
-import { _SERVICE } from '../dfx_generated/backend/backend.did';
-import { Principal } from '@dfinity/principal';
-import { AuthClient } from '@dfinity/auth-client';
-import { Identity } from '@dfinity/agent';
+import { 
+    InitialState,
+    State
+} from './state';
 
 import '@ui5/webcomponents/dist/Label.js';
 import '@ui5/webcomponents/dist/Link.js';
 import '@ui5/webcomponents-fiori/dist/Bar.js';
 
-import './demerg-signers';
-import './demerg-stats-and-info';
-import './demerg-threshold';
-import './demerg-transfers';
+import '../demerg-signers';
+import '../demerg-stats-and-info';
+import '../demerg-threshold';
+import '../demerg-transfers';
 
 export type SignersChangedEvent = {
     detail: State['signers'];
-};
-
-export type State = {
-    backend: ActorSubclass<_SERVICE> | null;
-    identity: Identity | null;
-    signers: {
-        loading: boolean;
-        value: Principal[];
-    };
-};
-
-export const InitialState: State = {
-    backend: null,
-    identity: null,
-    signers: {
-        loading: true,
-        value: []
-    }
 };
 
 class DemergApp extends HTMLElement {

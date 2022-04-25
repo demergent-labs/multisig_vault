@@ -1,8 +1,8 @@
 import { nat64 } from 'azle';
 import {
-    // InitialState as DemergAppInitialState, // TODO I would like to do this but getting a circular dependency error
+    InitialState as DemergAppInitialState,
     State as DemergAppState
-} from './demerg-app';
+} from './demerg-app/state';
 import {
     ControllersInfo,
     CycleStatsInfo,
@@ -42,8 +42,7 @@ type State = {
 };
 
 const InitialState: State = {
-    // backend: DemergAppInitialState.backend, // TODO I would like to do this but getting a circular dependency error
-    backend: null,
+    backend: DemergAppInitialState.backend,
     canister_address: {
         loading: true,
         value: ''

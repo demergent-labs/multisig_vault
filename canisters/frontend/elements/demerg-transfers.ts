@@ -1,9 +1,9 @@
 import { nat64 } from 'azle';
+import { sortCreatedAtDescending } from './demerg-app';
 import {
-    // InitialState as DemergAppInitialState, // TODO I would like to do this but getting a circular dependency error
-    State as DemergAppState,
-    sortCreatedAtDescending
-} from './demerg-app';
+    InitialState as DemergAppInitialState,
+    State as DemergAppState
+} from './demerg-app/state';
 import {
     _SERVICE,
     TransferProposal
@@ -56,8 +56,7 @@ type State = {
 };
 
 const InitialState: State = {
-    // backend: DemergAppInitialState.backend, // TODO I would like to do this but getting a circular dependency error
-    backend: null,
+    backend: DemergAppInitialState.backend,
     balance: {
         loading: true,
         value: 0n
@@ -294,7 +293,6 @@ class DemergTransfers extends HTMLElement {
                 >
                     ${state.hideOpenTransferProposals === false ? html`
                         <ui5-table-column slot="columns"></ui5-table-column>
-                        <ui5-table-column slot="columns"></ui5-table-column>
                     ` : ''}
 
                     <ui5-table-column slot="columns" demand-popin>
@@ -365,9 +363,7 @@ class DemergTransfers extends HTMLElement {
                                                 Adopt
                                             </ui5-button>
                                         </ui5-busy-indicator>
-                                    </ui5-table-cell>
 
-                                    <ui5-table-cell>
                                         <ui5-busy-indicator
                                             size="Small"
                                             .active=${state.votingOnProposals[transferProposal.id]?.rejecting}

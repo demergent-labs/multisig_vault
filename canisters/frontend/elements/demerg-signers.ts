@@ -1,8 +1,8 @@
+import { sortCreatedAtDescending } from './demerg-app';
 import {
-    // InitialState as DemergAppInitialState, // TODO I would like to do this but getting a circular dependency error
+    InitialState as DemergAppInitialState,
     State as DemergAppState,
-    sortCreatedAtDescending
-} from './demerg-app';
+} from './demerg-app/state';
 import {
     _SERVICE,
     SignerProposal
@@ -56,8 +56,7 @@ type State = {
 };
 
 const InitialState: State = {
-    // backend: DemergAppInitialState.backend, // TODO I would like to do this but getting a circular dependency error
-    backend: null,
+    backend: DemergAppInitialState.backend,
     creatingSignerProposal: false,
     errorMessage: '',
     hideCreateSignerProposal: true,
@@ -66,16 +65,12 @@ const InitialState: State = {
     loadingSigners: false,
     loadingSignerProposals: false,
     showErrorDialog: false,
-    // signers: DemergAppInitialState.signers, // TODO I would like to do this but getting a circular dependency error
-    signers: {
-        loading: false,
-        value: []
-    },
+    signers: DemergAppInitialState.signers,
     signerProposals: [],
     votingOnProposals: {}
 };
 
-class DemergSigners extends HTMLElement {
+export class DemergSigners extends HTMLElement {
     shadow = this.attachShadow({
         mode: 'closed'
     });
@@ -307,7 +302,6 @@ class DemergSigners extends HTMLElement {
                 >
                     ${state.hideOpenSignerProposals === false ? html`
                         <ui5-table-column slot="columns"></ui5-table-column>
-                        <ui5-table-column slot="columns"></ui5-table-column>
                     ` : ''}
 
                     <ui5-table-column slot="columns" demand-popin>
@@ -377,21 +371,19 @@ class DemergSigners extends HTMLElement {
                                             >
                                                 Adopt
                                             </ui5-button>
-                                        </ui5-busy-indicator>
-                                    </ui5-table-cell>
 
-                                    <ui5-table-cell>
-                                        <ui5-busy-indicator
-                                            size="Small"
-                                            .active=${state.votingOnProposals[signerProposal.id]?.rejecting}
-                                            delay="0"
-                                        >
-                                            <ui5-button
-                                                design="Negative"
-                                                @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, false)}
+                                            <ui5-busy-indicator
+                                                size="Small"
+                                                .active=${state.votingOnProposals[signerProposal.id]?.rejecting}
+                                                delay="0"
                                             >
-                                                Reject
-                                            </ui5-button>
+                                                <ui5-button
+                                                    design="Negative"
+                                                    @click=${() => this.handleVoteOnSignerProposalClick(signerProposal.id, false)}
+                                                >
+                                                    Reject
+                                                </ui5-button>
+                                            </ui5-busy-indicator>
                                         </ui5-busy-indicator>
                                     </ui5-table-cell>
                                 ` : ''}

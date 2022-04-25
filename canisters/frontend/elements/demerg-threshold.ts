@@ -1,9 +1,9 @@
 import { nat8 } from 'azle';
+import { sortCreatedAtDescending } from './demerg-app';
 import {
-    // InitialState as DemergAppInitialState, // TODO I would like to do this but getting a circular dependency error
-    State as DemergAppState,
-    sortCreatedAtDescending
-} from './demerg-app';
+    InitialState as DemergAppInitialState,
+    State as DemergAppState
+} from './demerg-app/state';
 import {
     _SERVICE,
     ThresholdProposal
@@ -57,19 +57,14 @@ type State = {
 };
 
 const InitialState: State = {
-    // backend: DemergAppInitialState.backend, // TODO I would like to do this but getting a circular dependency error
-    backend: null,
+    backend: DemergAppInitialState.backend,
     creatingThresholdProposal: false,
     errorMessage: '',
     hideCreateThresholdProposal: true,
     hideOpenThresholdProposals: false,
     loadingThresholdProposals: false,
     showErrorDialog: false,
-    // signers: DemergAppInitialState.signers, // TODO I would like to do this but getting a circular dependency error
-    signers: {
-        loading: false,
-        value: []
-    },
+    signers: DemergAppInitialState.signers,
     threshold: {
         loading: true,
         value: 0
@@ -268,7 +263,12 @@ class DemergThreshold extends HTMLElement {
                             <ui5-button
                                 @click=${async () => {
                                     this.store.loadingThresholdProposals = true;
-                                    await this.loadThresholdProposals();
+
+                                    await Promise.all([
+                                        this.loadThreshold(),
+                                        this.loadThresholdProposals()
+                                    ]);
+
                                     this.store.loadingThresholdProposals = false;
                                 }}
                             >
@@ -283,7 +283,6 @@ class DemergThreshold extends HTMLElement {
                     no-data-text="No ${state.hideOpenThresholdProposals === true ? 'closed' : 'open'} proposals"
                 >
                     ${state.hideOpenThresholdProposals === false ? html`
-                        <ui5-table-column slot="columns" demand-popin></ui5-table-column>
                         <ui5-table-column slot="columns" demand-popin></ui5-table-column>
                     ` : ''}
 
@@ -351,9 +350,7 @@ class DemergThreshold extends HTMLElement {
                                                 Adopt
                                             </ui5-button>
                                         </ui5-busy-indicator>
-                                    </ui5-table-cell>
 
-                                    <ui5-table-cell>
                                         <ui5-busy-indicator
                                             size="Small"
                                             .active=${state.votingOnProposals[thresholdProposal.id]?.rejecting}
