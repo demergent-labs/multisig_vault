@@ -74,7 +74,7 @@ export function init(
     state.threshold = threshold;
 }
 
-export function* getVaultBalance(): UpdateAsync<VaultBalanceResult> {
+export function* get_vault_balance(): UpdateAsync<VaultBalanceResult> {
     const account_balance_canister_result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
         account: binary_address_from_principal(ic.id(), 0)
     });

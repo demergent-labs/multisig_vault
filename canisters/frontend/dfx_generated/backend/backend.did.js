@@ -1,8 +1,4 @@
 export const idlFactory = ({ IDL }) => {
-  const VaultBalanceResult = IDL.Variant({
-    'ok' : IDL.Nat64,
-    'err' : IDL.Text,
-  });
   const ControllersInfo = IDL.Record({
     'frontend' : IDL.Vec(IDL.Principal),
     'backend' : IDL.Vec(IDL.Principal),
@@ -79,6 +75,10 @@ export const idlFactory = ({ IDL }) => {
     'to' : IDL.Principal,
     'amount' : IDL.Nat64,
   });
+  const VaultBalanceResult = IDL.Variant({
+    'ok' : IDL.Nat64,
+    'err' : IDL.Text,
+  });
   const DefaultResult = IDL.Variant({ 'ok' : IDL.Bool, 'err' : IDL.Text });
   const VoteOnProposalAction = IDL.Variant({
     'voted' : IDL.Null,
@@ -90,7 +90,6 @@ export const idlFactory = ({ IDL }) => {
     'err' : IDL.Text,
   });
   return IDL.Service({
-    'getVaultBalance' : IDL.Func([], [VaultBalanceResult], []),
     'get_canister_address' : IDL.Func([], [IDL.Text], ['query']),
     'get_canister_principal' : IDL.Func([], [IDL.Text], ['query']),
     'get_controllers_info' : IDL.Func([], [ControllersInfoResult], []),
@@ -109,6 +108,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'get_transfers' : IDL.Func([], [IDL.Vec(Transfer)], ['query']),
+    'get_vault_balance' : IDL.Func([], [VaultBalanceResult], []),
     'propose_signer' : IDL.Func(
         [IDL.Text, IDL.Principal, IDL.Bool],
         [DefaultResult],

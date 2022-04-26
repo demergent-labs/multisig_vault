@@ -173,7 +173,7 @@ class DemergTransfers extends HTMLElement {
             return;
         }
 
-        const vault_balance_result = await this.store.backend.getVaultBalance();
+        const vault_balance_result = await this.store.backend.get_vault_balance();
 
         if ('ok' in vault_balance_result) {
             this.store.balance = {

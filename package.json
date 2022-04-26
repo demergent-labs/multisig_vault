@@ -1,7 +1,8 @@
 {
     "scripts": {
         "build": "dfx generate backend && cd canisters/frontend && npm install && npm run build",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "test": "node test/test.js"
     },
     "dependencies": {
         "azle": "0.1.0",

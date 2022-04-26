@@ -145,6 +145,6 @@ service: (vec principal, nat8) -> {
     "vote_on_threshold_proposal": (text, bool) -> (VoteOnProposalResult);
     "propose_transfer": (text, text, nat64) -> (DefaultResult);
     "vote_on_transfer_proposal": (text, bool) -> (VoteOnProposalResult);
-    "getVaultBalance": () -> (VaultBalanceResult);
+    "get_vault_balance": () -> (VaultBalanceResult);
     "get_controllers_info": () -> (ControllersInfoResult);
 }

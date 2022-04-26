@@ -119,7 +119,6 @@ export type VoteOnProposalAction = { 'voted' : null } |
 export type VoteOnProposalResult = { 'ok' : VoteOnProposalAction } |
   { 'err' : string };
 export interface _SERVICE {
-  'getVaultBalance' : () => Promise<VaultBalanceResult>,
   'get_canister_address' : () => Promise<string>,
   'get_canister_principal' : () => Promise<string>,
   'get_controllers_info' : () => Promise<ControllersInfoResult>,
@@ -130,6 +129,7 @@ export interface _SERVICE {
   'get_threshold_proposals' : () => Promise<Array<ThresholdProposal>>,
   'get_transfer_proposals' : () => Promise<Array<TransferProposal>>,
   'get_transfers' : () => Promise<Array<Transfer>>,
+  'get_vault_balance' : () => Promise<VaultBalanceResult>,
   'propose_signer' : (
       arg_0: string,
       arg_1: Principal,

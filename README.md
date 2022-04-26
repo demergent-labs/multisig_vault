@@ -6,6 +6,8 @@ TODO let's add the bash commands to the azle testing script so we can properly t
 
 Deploy the backend canister with original signers and threshold:
 
+## Local Deployment
+
 ```bash
 dfx deploy --argument='(vec { principal "qaxqg-4ymay-xutcp-nnull-fvtqf-5p6d4-mxbja-i6t5s-wz7kb-csadv-qqe" }, 1)' backend
 ```
@@ -29,4 +31,28 @@ Add backend canister as controller to backend canister
 
 ```bash
 dfx canister --network ic update-settings --add-controller jiyou-fiaaa-aaaam-aad6q-cai backend
+```
+
+## IC Deployment
+
+### backend
+
+```bash
+# If this is not your initial deploy, you should ensure the state is wiped before deploying
+dfx canister --network ic uninstall-code backend
+
+# 3orhv-wbdl3-eilra-onpum-ik54m-f6y66-qzh4z-sjpqz-ao3bz-nsmz2-lae is the principal of the II/NFID that you want to have initial control
+dfx deploy --network ic --argument='(vec { principal "3orhv-wbdl3-eilra-onpum-ik54m-f6y66-qzh4z-sjpqz-ao3bz-nsmz2-lae" }, 1)' backend
+
+dfx deploy --network ic frontend
+
+# Add backend canister as controller to frontend canister
+# jiyou-fiaaa-aaaam-aad6q-cai is the canister id of the backend canister
+dfx canister --network ic update-settings --add-controller $(dfx canister id backend) frontend
+
+# Add backend canister as controller to backend canister
+dfx canister --network ic update-settings --add-controller $(dfx canister id backend) backend
+
+# When you are ready for the vault to be autonomous, remove all other controllers
+# TODO not yet sure what this command is
 ```
