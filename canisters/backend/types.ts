@@ -1,16 +1,18 @@
 import {
+    Async,
     Principal,
     Variant,
     nat64,
     nat8,
     Opt
 } from 'azle';
+import { TransferError } from 'azle/canisters/ledger';
 
 export type State = {
     frontend_cycle_stats: CycleStats;
     backend_cycle_stats: CycleStats;
     signers: {
-        [principal: Principal]: Principal | undefined;
+        [principal: string]: Principal | undefined;
     };
     signer_proposals: {
         [id: string]: SignerProposal | undefined;
@@ -76,19 +78,27 @@ export type Vote = {
 };
 
 export type DefaultResult = Variant<{
-    ok?: boolean;
-    err?: string;
+    ok: boolean;
+    err: string;
 }>;
 
 export type VoteOnProposalResult = Variant<{
-    ok?: VoteOnProposalAction
-    err?: string;
+    ok: VoteOnProposalAction
+    err: string;
+}>;
+
+export type VoteOnTransferProposalResult = Variant<{
+    ok: VoteOnProposalAction
+    err: Variant<{
+        message: string;
+        transfer_error: TransferError;
+    }>;
 }>;
 
 type VoteOnProposalAction = Variant<{
-    voted?: null;
-    adopted?: null;
-    rejected?: null;
+    voted: null;
+    adopted: null;
+    rejected: null;
 }>;
 
 export type Transfer = {
@@ -98,33 +108,34 @@ export type Transfer = {
 };
 
 export type VaultBalanceResult = Variant<{
-    ok?: nat64;
-    err?: string;
+    ok: nat64;
+    err: string;
 }>;
 
-export type VoteOnSignerProposalChecksResult = {
-    ok?: SignerProposal;
-    err?: string;
-};
+export type VoteOnSignerProposalChecksResult = Variant<{
+    ok: SignerProposal;
+    err: string;
+}>;
 
-export type VoteOnThresholdProposalChecksResult = {
-    ok?: ThresholdProposal;
-    err?: string;
-};
+export type VoteOnThresholdProposalChecksResult = Variant<{
+    ok: ThresholdProposal;
+    err: string;
+}>;
 
-export type VoteOnTransferProposalChecksResult = {
-    ok?: TransferProposal;
-    err?: string;
-};
+export type VoteOnTransferProposalChecksResult = Variant<{
+    ok: TransferProposal;
+    err: string;
+}>;
 
 export type ProposeTransferChecksResult = Variant<{
-    ok?: {
+    ok: {
         randomness: nat8[];
     };
-    err?: string;
+    err: string;
 }>;
 
 export type VoteMutator = () => VoteOnProposalResult;
+export type TransferVoteMutator = () => Async<VoteOnTransferProposalResult>;
 
 export type DefaultMutator = () => DefaultResult;
 
@@ -172,11 +183,16 @@ export type CycleStatsInfo = {
 };
 
 export type ControllersInfoResult = Variant<{
-    ok?: ControllersInfo;
-    err?: string;
+    ok: ControllersInfo;
+    err: string;
 }>;
 
 type ControllersInfo = {
     frontend: Principal[];
     backend: Principal[];
 };
+
+export type RandomnessResult = Variant<{
+    ok: nat8[];
+    err: string;
+}>;

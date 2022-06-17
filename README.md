@@ -8,8 +8,16 @@ Deploy the backend canister with original signers and threshold:
 
 ## Local Deployment
 
+Deploy backend:
+
 ```bash
 dfx deploy --argument='(vec { principal "qaxqg-4ymay-xutcp-nnull-fvtqf-5p6d4-mxbja-i6t5s-wz7kb-csadv-qqe" }, 1)' backend
+```
+
+Deploy frontend:
+
+```bash
+dfx deploy frontend
 ```
 
 Deploy ICP ledger:

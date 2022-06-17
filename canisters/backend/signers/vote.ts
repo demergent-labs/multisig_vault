@@ -1,5 +1,6 @@
 import {
     ic,
+    ok,
     Principal,
     Update
 } from 'azle';
@@ -30,7 +31,7 @@ export function vote_on_signer_proposal(
         state.transfer_proposals
     );
 
-    if (checks_result.ok === undefined) {
+    if (!ok(checks_result)) {
         return {
             err: checks_result.err
         };
@@ -96,7 +97,7 @@ function perform_checks(
 
     if (
         signer_proposal.remove === true &&
-        signers[signer_proposal.signer] === undefined
+        signers[signer_proposal.signer.toText()] === undefined
     ) {
         return {
             err: `Signer ${signer_proposal.signer} does not exist`
@@ -149,10 +150,10 @@ function get_mutator(
     if (adopt_votes.length >= threshold) {
         return () => {
             if (signer_proposal.remove === true) {
-                delete state.signers[signer_proposal.signer];
+                delete state.signers[signer_proposal.signer.toText()];
             }
             else {
-                state.signers[signer_proposal.signer] = signer_proposal.signer;
+                state.signers[signer_proposal.signer.toText()] = signer_proposal.signer;
             }
     
             signer_proposal.votes = new_votes;

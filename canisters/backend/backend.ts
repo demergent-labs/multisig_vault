@@ -10,12 +10,12 @@ import {
 import {
     binary_address_from_principal,
     hex_address_from_principal,
-    ICP,
+    Ledger,
     Tokens
-} from 'azle/canisters/icp';
+} from 'azle/canisters/ledger';
 import {
     CanisterStatusResult,
-    Management
+    ManagementCanister
 } from 'azle/canisters/management';
 import { process } from './process_polyfill';
 import {
@@ -24,8 +24,7 @@ import {
     VaultBalanceResult
 } from './types';
 
-export const ICPCanister = ic.canisters.ICP<ICP>(process.env.ICP_LEDGER_CANISTER_ID);
-export const ManagementCanister = ic.canisters.Management<Management>('aaaaa-aa');
+export const ICPCanister = ic.canisters.Ledger<Ledger>(Principal.fromText(process.env.ICP_LEDGER_CANISTER_ID));
 
 export let state: State = {
     frontend_cycle_stats: {
@@ -67,7 +66,7 @@ export function init(
     state.signers = signers.reduce((result, signer) => {
         return {
             ...result,
-            [signer]: signer
+            [signer.toText()]: signer
         };
     }, {});
 
@@ -90,7 +89,7 @@ export function* get_vault_balance(): UpdateAsync<VaultBalanceResult> {
     };
 }
 
-export function get_canister_principal(): Query<string> {
+export function get_canister_principal(): Query<Principal> {
     return ic.id();
 }
 
@@ -98,9 +97,13 @@ export function get_canister_address(): Query<string> {
     return hex_address_from_principal(ic.id(), 0);
 }
 
+export function get_address_from_principal(principal: Principal): Query<string> {
+    return hex_address_from_principal(principal, 0);
+}
+
 export function* get_controllers_info(): UpdateAsync<ControllersInfoResult> {
     const frontend_canister_result: CanisterResult<CanisterStatusResult> = yield ManagementCanister.canister_status({
-        canister_id: process.env.FRONTEND_CANISTER_ID
+        canister_id: Principal.fromText(process.env.FRONTEND_CANISTER_ID)
     });
 
     if (frontend_canister_result.ok === undefined) {

@@ -1,5 +1,19 @@
 import type { Principal } from '@dfinity/principal';
 export interface AccountBalanceArgs { 'account' : Array<number> }
+export interface Archive { 'canister_id' : Principal }
+export interface Archives { 'archives' : Array<Archive> }
+export interface Block {
+  'transaction' : Transaction,
+  'timestamp' : TimeStamp,
+  'parent_hash' : [] | [Array<number>],
+}
+export interface BlockRange { 'blocks' : Array<Block> }
+export interface CanisterSettings {
+  'freezing_threshold' : [] | [bigint],
+  'controllers' : [] | [Array<Principal>],
+  'memory_allocation' : [] | [bigint],
+  'compute_allocation' : [] | [bigint],
+}
 export type CanisterStatus = { 'stopped' : null } |
   { 'stopping' : null } |
   { 'running' : null };
@@ -17,6 +31,8 @@ export interface ControllersInfo {
 }
 export type ControllersInfoResult = { 'ok' : ControllersInfo } |
   { 'err' : string };
+export interface CreateCanisterArgs { 'settings' : [] | [CanisterSettings] }
+export interface CreateCanisterResult { 'canister_id' : Principal }
 export interface CycleStatsInfo {
   'frontend' : {
     'cycles_remaining' : bigint,
@@ -41,6 +57,7 @@ export interface CycleStatsInfo {
     'cycle_time_remaining' : bigint,
   },
 }
+export interface DecimalsResult { 'decimals' : number }
 export type DefaultResult = { 'ok' : boolean } |
   { 'err' : string };
 export interface DefiniteCanisterSettings {
@@ -49,7 +66,63 @@ export interface DefiniteCanisterSettings {
   'memory_allocation' : bigint,
   'compute_allocation' : bigint,
 }
+export interface DeleteCanisterArgs { 'canister_id' : Principal }
+export interface DepositCyclesArgs { 'canister_id' : Principal }
+export interface GetBlocksArgs { 'start' : bigint, 'length' : bigint }
+export interface InstallCodeArgs {
+  'arg' : Array<number>,
+  'wasm_module' : Array<number>,
+  'mode' : InstallCodeMode,
+  'canister_id' : Principal,
+}
+export type InstallCodeMode = { 'reinstall' : null } |
+  { 'upgrade' : null } |
+  { 'install' : null };
 export interface NameResult { 'name' : string }
+export type Operation = {
+    'Burn' : { 'from' : Array<number>, 'amount' : Tokens }
+  } |
+  { 'Mint' : { 'to' : Array<number>, 'amount' : Tokens } } |
+  {
+    'Transfer' : {
+      'to' : Array<number>,
+      'fee' : Tokens,
+      'from' : Array<number>,
+      'amount' : Tokens,
+    }
+  };
+export interface ProvisionalCreateCanisterWithCyclesArgs {
+  'settings' : [] | [CanisterSettings],
+  'amount' : [] | [bigint],
+}
+export interface ProvisionalCreateCanisterWithCyclesResult {
+  'canister_id' : Principal,
+}
+export interface ProvisionalTopUpCanisterArgs {
+  'canister_id' : Principal,
+  'amount' : bigint,
+}
+export type QueryArchiveError = {
+    'BadFirstBlockIndex' : {
+      'requested_index' : bigint,
+      'first_valid_index' : bigint,
+    }
+  } |
+  { 'Other' : { 'error_message' : string, 'error_code' : bigint } };
+export type QueryArchiveFn = (arg_0: GetBlocksArgs) => Promise<
+    QueryArchiveResult
+  >;
+export type QueryArchiveResult = { 'Ok' : BlockRange } |
+  { 'Err' : QueryArchiveError };
+export interface QueryBlocksResponse {
+  'certificate' : [] | [Array<number>],
+  'blocks' : Array<Block>,
+  'chain_length' : bigint,
+  'first_block_index' : bigint,
+  'archived_blocks' : Array<
+    { 'callback' : QueryArchiveFn, 'start' : bigint, 'length' : bigint }
+  >,
+}
 export interface SignerProposal {
   'id' : string,
   'remove' : boolean,
@@ -63,6 +136,9 @@ export interface SignerProposal {
   'signer' : Principal,
   'adopted' : boolean,
 }
+export interface StartCanisterArgs { 'canister_id' : Principal }
+export interface StopCanisterArgs { 'canister_id' : Principal }
+export interface SymbolResult { 'symbol' : string }
 export interface ThresholdProposal {
   'id' : string,
   'rejected_at' : [] | [bigint],
@@ -77,6 +153,11 @@ export interface ThresholdProposal {
 }
 export interface TimeStamp { 'timestamp_nanos' : bigint }
 export interface Tokens { 'e8s' : bigint }
+export interface Transaction {
+  'memo' : bigint,
+  'operation' : [] | [Operation],
+  'created_at_time' : TimeStamp,
+}
 export interface Transfer { 'id' : string, 'to' : Principal, 'amount' : bigint }
 export interface TransferArgs {
   'to' : Array<number>,
@@ -110,6 +191,11 @@ export interface TransferProposal {
 }
 export type TransferResult = { 'Ok' : bigint } |
   { 'Err' : TransferError };
+export interface UninstallCodeArgs { 'canister_id' : Principal }
+export interface UpdateSettingsArgs {
+  'canister_id' : Principal,
+  'settings' : CanisterSettings,
+}
 export type VaultBalanceResult = { 'ok' : bigint } |
   { 'err' : string };
 export interface Vote { 'adopt' : boolean, 'voter' : Principal }
@@ -118,9 +204,12 @@ export type VoteOnProposalAction = { 'voted' : null } |
   { 'adopted' : null };
 export type VoteOnProposalResult = { 'ok' : VoteOnProposalAction } |
   { 'err' : string };
+export type VoteOnTransferProposalResult = { 'ok' : VoteOnProposalAction } |
+  { 'err' : { 'transfer_error' : TransferError } | { 'message' : string } };
 export interface _SERVICE {
+  'get_address_from_principal' : (arg_0: Principal) => Promise<string>,
   'get_canister_address' : () => Promise<string>,
-  'get_canister_principal' : () => Promise<string>,
+  'get_canister_principal' : () => Promise<Principal>,
   'get_controllers_info' : () => Promise<ControllersInfoResult>,
   'get_cycle_stats_info' : () => Promise<CycleStatsInfo>,
   'get_signer_proposals' : () => Promise<Array<SignerProposal>>,
@@ -149,6 +238,6 @@ export interface _SERVICE {
       VoteOnProposalResult
     >,
   'vote_on_transfer_proposal' : (arg_0: string, arg_1: boolean) => Promise<
-      VoteOnProposalResult
+      VoteOnTransferProposalResult
     >,
 }

@@ -50,14 +50,6 @@ type TransferProposal = record {
     "rejected_at": opt nat64;
 };
 
-type AccountBalanceArgs = record {
-    "account": vec nat8;
-};
-
-type TransferFeeArg = record {
-    
-};
-
 type TransferArgs = record {
     "memo": nat64;
     "amount": Tokens;
@@ -67,8 +59,17 @@ type TransferArgs = record {
     "created_at_time": opt TimeStamp;
 };
 
-type NameResult = record {
-    "name": text;
+type AccountBalanceArgs = record {
+    "account": vec nat8;
+};
+
+type TransferFeeArg = record {
+    
+};
+
+type GetBlocksArgs = record {
+    "start": nat64;
+    "length": nat64;
 };
 
 type Tokens = record {
@@ -79,7 +80,81 @@ type TransferFee = record {
     "transfer_fee": Tokens;
 };
 
+type QueryBlocksResponse = record {
+    "chain_length": nat64;
+    "certificate": opt vec nat8;
+    "blocks": vec Block;
+    "first_block_index": nat64;
+    "archived_blocks": vec record { "start": nat64; "length": nat64; "callback": QueryArchiveFn; };
+};
+
+type SymbolResult = record {
+    "symbol": text;
+};
+
+type NameResult = record {
+    "name": text;
+};
+
+type DecimalsResult = record {
+    "decimals": nat32;
+};
+
+type Archives = record {
+    "archives": vec Archive;
+};
+
+type CreateCanisterArgs = record {
+    "settings": opt CanisterSettings;
+};
+
+type UpdateSettingsArgs = record {
+    "canister_id": principal;
+    "settings": CanisterSettings;
+};
+
+type InstallCodeArgs = record {
+    "mode": InstallCodeMode;
+    "canister_id": principal;
+    "wasm_module": vec nat8;
+    "arg": vec nat8;
+};
+
+type UninstallCodeArgs = record {
+    "canister_id": principal;
+};
+
+type StartCanisterArgs = record {
+    "canister_id": principal;
+};
+
+type StopCanisterArgs = record {
+    "canister_id": principal;
+};
+
 type CanisterStatusArgs = record {
+    "canister_id": principal;
+};
+
+type DeleteCanisterArgs = record {
+    "canister_id": principal;
+};
+
+type DepositCyclesArgs = record {
+    "canister_id": principal;
+};
+
+type ProvisionalCreateCanisterWithCyclesArgs = record {
+    "amount": opt nat;
+    "settings": opt CanisterSettings;
+};
+
+type ProvisionalTopUpCanisterArgs = record {
+    "canister_id": principal;
+    "amount": nat;
+};
+
+type CreateCanisterResult = record {
     "canister_id": principal;
 };
 
@@ -91,6 +166,10 @@ type CanisterStatusResult = record {
     "cycles": nat;
 };
 
+type ProvisionalCreateCanisterWithCyclesResult = record {
+    "canister_id": principal;
+};
+
 type Vote = record {
     "voter": principal;
     "adopt": bool;
@@ -98,6 +177,29 @@ type Vote = record {
 
 type TimeStamp = record {
     "timestamp_nanos": nat64;
+};
+
+type Block = record {
+    "parent_hash": opt vec nat8;
+    "transaction": Transaction;
+    "timestamp": TimeStamp;
+};
+
+type Transaction = record {
+    "memo": nat64;
+    "operation": opt Operation;
+    "created_at_time": TimeStamp;
+};
+
+type Archive = record {
+    "canister_id": principal;
+};
+
+type CanisterSettings = record {
+    "controllers": opt vec principal;
+    "compute_allocation": opt nat;
+    "memory_allocation": opt nat;
+    "freezing_threshold": opt nat;
 };
 
 type DefiniteCanisterSettings = record {
@@ -112,9 +214,15 @@ type ControllersInfo = record {
     "backend": vec principal;
 };
 
+type BlockRange = record {
+    "blocks": vec Block;
+};
+
 type DefaultResult = variant { "ok": bool; "err": text };
 
 type VoteOnProposalResult = variant { "ok": VoteOnProposalAction; "err": text };
+
+type VoteOnTransferProposalResult = variant { "ok": VoteOnProposalAction; "err": variant { "message": text; "transfer_error": TransferError } };
 
 type VaultBalanceResult = variant { "ok": nat64; "err": text };
 
@@ -122,11 +230,21 @@ type ControllersInfoResult = variant { "ok": ControllersInfo; "err": text };
 
 type TransferResult = variant { "Ok": nat64; "Err": TransferError };
 
+type QueryArchiveResult = variant { "Ok": BlockRange; "Err": QueryArchiveError };
+
 type VoteOnProposalAction = variant { "voted": null; "adopted": null; "rejected": null };
 
 type TransferError = variant { "BadFee": record { "expected_fee": Tokens; }; "InsufficientFunds": record { "balance": Tokens; }; "TxTooOld": record { "allowed_window_nanos": nat64; }; "TxCreatedInFuture": null; "TxDuplicate": record { "duplicate_of": nat64; } };
 
+type Operation = variant { "Mint": record { "to": vec nat8; "amount": Tokens; }; "Burn": record { "from": vec nat8; "amount": Tokens; }; "Transfer": record { "from": vec nat8; "to": vec nat8; "amount": Tokens; "fee": Tokens; } };
+
+type QueryArchiveError = variant { "BadFirstBlockIndex": record { "requested_index": nat64; "first_valid_index": nat64; }; "Other": record { "error_code": nat64; "error_message": text; } };
+
+type InstallCodeMode = variant { "install": null; "reinstall": null; "upgrade": null };
+
 type CanisterStatus = variant { "running": null; "stopping": null; "stopped": null };
+
+type QueryArchiveFn = func (GetBlocksArgs) -> (QueryArchiveResult) query;
 
 service: (vec principal, nat8) -> {
     "get_cycle_stats_info": () -> (CycleStatsInfo) query;
@@ -136,15 +254,16 @@ service: (vec principal, nat8) -> {
     "get_threshold_proposals": () -> (vec ThresholdProposal) query;
     "get_transfers": () -> (vec Transfer) query;
     "get_transfer_proposals": () -> (vec TransferProposal) query;
-    "get_canister_principal": () -> (text) query;
+    "get_canister_principal": () -> (principal) query;
     "get_canister_address": () -> (text) query;
+    "get_address_from_principal": (principal) -> (text) query;
     "snapshot_cycles": () -> (DefaultResult);
     "propose_signer": (text, principal, bool) -> (DefaultResult);
     "vote_on_signer_proposal": (text, bool) -> (VoteOnProposalResult);
     "propose_threshold": (text, nat8) -> (DefaultResult);
     "vote_on_threshold_proposal": (text, bool) -> (VoteOnProposalResult);
     "propose_transfer": (text, text, nat64) -> (DefaultResult);
-    "vote_on_transfer_proposal": (text, bool) -> (VoteOnProposalResult);
+    "vote_on_transfer_proposal": (text, bool) -> (VoteOnTransferProposalResult);
     "get_vault_balance": () -> (VaultBalanceResult);
     "get_controllers_info": () -> (ControllersInfoResult);
 }

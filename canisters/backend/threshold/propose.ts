@@ -1,19 +1,20 @@
 import {
-    CanisterResult,
     ic,
+    ok,
     nat8,
     Principal,
     UpdateAsync
 } from 'azle';
-import { Management } from 'azle/canisters/management';
 import { state } from '../backend';
 import { sha224 } from 'hash.js';
 import { is_signer } from '../signers';
 import {
     DefaultMutator,
     DefaultResult,
+    RandomnessResult,
     State
 } from '../types';
+import { get_randomness } from '../utilities';
 
 export function* propose_threshold(
     description: string,
@@ -27,21 +28,21 @@ export function* propose_threshold(
         state.signers
     );
 
-    if (checks_result.ok === undefined) {
+    if (!ok(checks_result)) {
         return {
             err: checks_result.err
         };
     }
 
-    const randomness_canister_result: CanisterResult<nat8[]> = yield ic.canisters.Management<Management>('aaaaa-aa').raw_rand();
+    const randomness_result: RandomnessResult = yield get_randomness();
 
-    if (randomness_canister_result.ok === undefined) {
+    if (!ok(randomness_result)) {
         return {
-            err: randomness_canister_result.err
+            err: randomness_result.err
         };
     }
 
-    const randomness = randomness_canister_result.ok;
+    const randomness = randomness_result.ok;
 
     const mutator = get_mutator(
         caller,

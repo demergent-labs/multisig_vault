@@ -2,14 +2,15 @@ import {
     CanisterResult,
     ic,
     nat64,
+    Principal,
     Query,
     UpdateAsync
 } from 'azle';
-import { CanisterStatusResult } from 'azle/canisters/management';
 import {
-    ManagementCanister,
-    state
-} from './backend';
+    CanisterStatusResult,
+    ManagementCanister
+} from 'azle/canisters/management';
+import { state } from './backend';
 import {
     DECIMALS,
     NANOS_PER_YEAR,
@@ -58,7 +59,7 @@ export function get_cycle_stats_info(): Query<CycleStatsInfo> {
 
 export function* snapshot_cycles(): UpdateAsync<DefaultResult> {
     const canister_result: CanisterResult<CanisterStatusResult> = yield ManagementCanister.canister_status({
-        canister_id: process.env.FRONTEND_CANISTER_ID
+        canister_id: Principal.fromText(process.env.FRONTEND_CANISTER_ID)
     });
 
     if (canister_result.ok === undefined) {
@@ -75,7 +76,7 @@ export function* snapshot_cycles(): UpdateAsync<DefaultResult> {
     );
     const backend_cycle_stats = calculate_updated_cycle_stats(
         state.backend_cycle_stats,
-        ic.canisterBalance()
+        ic.canister_balance()
     );
 
     state.frontend_cycle_stats = frontend_cycle_stats;

@@ -1,5 +1,6 @@
 import {
     ic,
+    ok,
     Principal,
     Update
 } from 'azle';
@@ -29,7 +30,7 @@ export function vote_on_threshold_proposal(
         state.transfer_proposals
     );
 
-    if (checks_result.ok === undefined) {
+    if (!ok(checks_result)) {
         return {
             err: checks_result.err
         };

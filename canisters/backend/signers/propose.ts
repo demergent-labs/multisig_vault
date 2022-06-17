@@ -1,19 +1,20 @@
 import {
-    CanisterResult,
     ic,
     nat8,
+    ok,
     Principal,
     UpdateAsync
 } from 'azle';
-import { Management } from 'azle/canisters/management';
 import { state } from '../backend';
 import { sha224 } from 'hash.js';
 import { is_signer } from './index';
 import {
     DefaultMutator,
     DefaultResult,
+    RandomnessResult,
     State
 } from '../types';
+import { get_randomness } from '../utilities';
 
 export function* propose_signer(
     description: string,
@@ -29,21 +30,21 @@ export function* propose_signer(
         remove
     );
 
-    if (checks_result.ok === undefined) {
+    if (!ok(checks_result)) {
         return {
             err: checks_result.err
         };
     }
 
-    const raw_rand_canister_result: CanisterResult<nat8[]> = yield ic.canisters.Management<Management>('aaaaa-aa').raw_rand();
+    const randomness_result: RandomnessResult = yield get_randomness();
 
-    if (raw_rand_canister_result.ok === undefined) {
+    if (!ok(randomness_result)) {
         return {
-            err: raw_rand_canister_result.err
+            err: randomness_result.err
         };
     }
 
-    const randomness = raw_rand_canister_result.ok;
+    const randomness = randomness_result.ok;
 
     const mutator = get_mutator(
         caller,
@@ -72,7 +73,7 @@ function perform_checks(
 
     if (
         remove === true &&
-        signers[signer] === undefined
+        signers[signer.toText()] === undefined
     ) {
         return {
             err: `Signer ${signer} does not exist`

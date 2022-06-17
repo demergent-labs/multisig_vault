@@ -1,6 +1,8 @@
 import {
+    Async,
     CanisterResult,
     ic,
+    ok,
     nat8,
     nat64,
     Principal,
@@ -10,8 +12,8 @@ import {
     binary_address_from_principal,
     Tokens,
     TransferFee
-} from 'azle/canisters/icp';
-import { Management } from 'azle/canisters/management';
+} from 'azle/canisters/ledger';
+import { ManagementCanister } from 'azle/canisters/management';
 import {
     state,
     ICPCanister
@@ -32,22 +34,12 @@ export function* propose_transfer(
 ): UpdateAsync<DefaultResult> {
     const caller = ic.caller();
 
-    // TODO because we perform the cross-canister calls before the checks, a non-signer could DoS with many cross-canister calls
-    const account_balance_result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
-        account: binary_address_from_principal(ic.id(), 0)
-    });
-    const transfer_fee_result: CanisterResult<TransferFee> = yield ICPCanister.transfer_fee({});
-    const randomness_canister_result: CanisterResult<nat8[]> = yield ic.canisters.Management<Management>('aaaaa-aa').raw_rand();
-
-    const checks_result = perform_checks(
+    const checks_result: ProposeTransferChecksResult = yield perform_checks(
         caller,
-        amount,
-        account_balance_result,
-        transfer_fee_result,
-        randomness_canister_result
+        amount
     );
 
-    if (checks_result.ok === undefined) {
+    if (!ok(checks_result)) {
         return {
             err: checks_result.err
         };
@@ -68,18 +60,19 @@ export function* propose_transfer(
     return mutator_result;
 }
 
-function perform_checks(
+function* perform_checks(
     caller: Principal,
-    amount: nat64,
-    account_balance_result: CanisterResult<Tokens>,
-    transfer_fee_result: CanisterResult<TransferFee>,
-    randomness_canister_result: CanisterResult<nat8[]>
-): ProposeTransferChecksResult {
+    amount: nat64
+): Async<ProposeTransferChecksResult> {
     if (is_signer(caller) === false) {
         return {
             err: 'Only signers can create a proposal'
         };
     }
+
+    const account_balance_result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
+        account: binary_address_from_principal(ic.id(), 0)
+    });
 
     if (account_balance_result.ok === undefined) {
         return {
@@ -87,15 +80,11 @@ function perform_checks(
         };
     }
 
+    const transfer_fee_result: CanisterResult<TransferFee> = yield ICPCanister.transfer_fee({});
+
     if (transfer_fee_result.ok === undefined) {
         return {
             err: transfer_fee_result.err
-        };
-    }
-
-    if (randomness_canister_result.ok === undefined) {
-        return {
-            err: randomness_canister_result.err
         };
     }
 
@@ -105,6 +94,14 @@ function perform_checks(
     if (account_balance < (amount + transfer_fee)) {
         return {
             err: 'Insufficient funds'
+        };
+    }
+
+    const randomness_canister_result: CanisterResult<nat8[]> = yield ManagementCanister.raw_rand();
+
+    if (randomness_canister_result.ok === undefined) {
+        return {
+            err: randomness_canister_result.err
         };
     }
 

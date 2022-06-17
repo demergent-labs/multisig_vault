@@ -14,7 +14,7 @@ export function get_signer_proposals(): Query<SignerProposal[]> {
 }
 
 export function is_signer(signer: Principal): boolean {
-    if (state.signers[signer] === signer) {
+    if (state.signers[signer.toText()]?.toText() === signer.toText()) {
         return true;
     }
 

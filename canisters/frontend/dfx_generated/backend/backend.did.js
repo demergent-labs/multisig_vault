@@ -89,9 +89,29 @@ export const idlFactory = ({ IDL }) => {
     'ok' : VoteOnProposalAction,
     'err' : IDL.Text,
   });
+  const Tokens = IDL.Record({ 'e8s' : IDL.Nat64 });
+  const TransferError = IDL.Variant({
+    'TxTooOld' : IDL.Record({ 'allowed_window_nanos' : IDL.Nat64 }),
+    'BadFee' : IDL.Record({ 'expected_fee' : Tokens }),
+    'TxDuplicate' : IDL.Record({ 'duplicate_of' : IDL.Nat64 }),
+    'TxCreatedInFuture' : IDL.Null,
+    'InsufficientFunds' : IDL.Record({ 'balance' : Tokens }),
+  });
+  const VoteOnTransferProposalResult = IDL.Variant({
+    'ok' : VoteOnProposalAction,
+    'err' : IDL.Variant({
+      'transfer_error' : TransferError,
+      'message' : IDL.Text,
+    }),
+  });
   return IDL.Service({
+    'get_address_from_principal' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Text],
+        ['query'],
+      ),
     'get_canister_address' : IDL.Func([], [IDL.Text], ['query']),
-    'get_canister_principal' : IDL.Func([], [IDL.Text], ['query']),
+    'get_canister_principal' : IDL.Func([], [IDL.Principal], ['query']),
     'get_controllers_info' : IDL.Func([], [ControllersInfoResult], []),
     'get_cycle_stats_info' : IDL.Func([], [CycleStatsInfo], ['query']),
     'get_signer_proposals' : IDL.Func([], [IDL.Vec(SignerProposal)], ['query']),
@@ -133,7 +153,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'vote_on_transfer_proposal' : IDL.Func(
         [IDL.Text, IDL.Bool],
-        [VoteOnProposalResult],
+        [VoteOnTransferProposalResult],
         [],
       ),
   });
