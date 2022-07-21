@@ -16,7 +16,7 @@ jobs:
             - name: Install Rust ${{ matrix.rust }}
               uses: actions-rs/toolchain@v1
               with:
-                  toolchain: ${{ matrix.rust }}
+                  toolchain: stable
                   profile: minimal
                   override: true
             - name: Rust cache
