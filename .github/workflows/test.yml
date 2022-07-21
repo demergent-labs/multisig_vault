@@ -19,13 +19,14 @@ jobs:
                   toolchain: stable
                   profile: minimal
                   override: true
-            - name: Rust cache
-              uses: actions/cache@v2
-              continue-on-error: false
-              with:
-                  path: target
-                  key: multisig_vault_cache_${{ hashFiles('target/azle/Cargo.lock') }}
-                  # restore-keys: multisig_vault-cache # TODO might need to be more intelligent and hash files here
+            - uses: Swatinem/rust-cache@v2
+            # - name: Rust cache # TODO I can't figure out how to actually get the cache to work
+            #   uses: actions/cache@v2
+            #   continue-on-error: false
+            #   with:
+            #       path: target
+            #       key: multisig_vault_cache_${{ hashFiles('target/azle/Cargo.lock') }}
+            #       # restore-keys: multisig_vault-cache # TODO might need to be more intelligent and hash files here
             - run: dfx start --clean --background
             - shell: bash -l {0}
               run: npm install
