@@ -22,8 +22,8 @@ dfx deploy frontend
 
 Deploy ICP ledger:
 
-* Current dfx identity ledger account-id, found with `dfx ledger account-id`: ebe2cd28c5b8d36e5e261ad24430dec1d426556b565c1b526626f59eceaf9abd
-* backend canister account-id, found with `dfx ledger account-id --of-canister backend`: 082ecf2e3f647ac600f43f38a68342fba5b8e68b085f02592b77f39808a8d2b5
+-   Current dfx identity ledger account-id, found with `dfx ledger account-id`: ebe2cd28c5b8d36e5e261ad24430dec1d426556b565c1b526626f59eceaf9abd
+-   backend canister account-id, found with `dfx ledger account-id --of-canister backend`: 082ecf2e3f647ac600f43f38a68342fba5b8e68b085f02592b77f39808a8d2b5
 
 ```bash
 dfx deploy icp_ledger --argument '(record {minting_account = "ebe2cd28c5b8d36e5e261ad24430dec1d426556b565c1b526626f59eceaf9abd"; initial_values = vec { record { "082ecf2e3f647ac600f43f38a68342fba5b8e68b085f02592b77f39808a8d2b5"; record { e8s=100_000_000_000 } }; }; send_whitelist = vec {}})'
@@ -64,3 +64,5 @@ dfx canister --network ic update-settings --add-controller $(dfx canister id bac
 # When you are ready for the vault to be autonomous, remove all other controllers
 # TODO not yet sure what this command is
 ```
+
+TODO test
