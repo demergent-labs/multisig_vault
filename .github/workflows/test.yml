@@ -1,0 +1,37 @@
+name: Multisig Vault Tests
+on:
+    push:
+        branches:
+            - main
+    pull_request: # Runs on pull requests to any branch
+jobs:
+    basic-integration-tests:
+        needs: release-candidate-deploy
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: 18
+            - run: DFX_VERSION=0.11.0 sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+            - name: Install Rust ${{ matrix.rust }}
+              uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: ${{ matrix.rust }}
+                  profile: minimal
+                  override: true
+            - name: Rust cache
+              uses: actions/cache@v2
+              continue-on-error: false
+              with:
+                  path: target
+                  key: multisig_vault-cache
+                  restore-keys: multisig_vault-cache # TODO might need to be more intelligent and hash files here
+            # - working-directory: multisig_vault
+            - run: dfx start --clean --background
+            - shell: bash -l {0}
+              # working-directory: multisig_vault
+              run: npm install
+            - shell: bash -l {0}
+              # working-directory: multisig_vault
+              run: npm test
