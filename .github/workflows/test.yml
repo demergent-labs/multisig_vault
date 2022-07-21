@@ -24,7 +24,7 @@ jobs:
               continue-on-error: false
               with:
                   path: target
-                  key: multisig_vault_cache_${{ hashFiles('**/Cargo.lock') }}
+                  key: multisig_vault_cache_${{ hashFiles('target/azle/Cargo.lock') }}
                   # restore-keys: multisig_vault-cache # TODO might need to be more intelligent and hash files here
             - run: dfx start --clean --background
             - shell: bash -l {0}
