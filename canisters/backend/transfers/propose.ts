@@ -14,10 +14,7 @@ import {
     TransferFee
 } from 'azle/canisters/ledger';
 import { ManagementCanister } from 'azle/canisters/management';
-import {
-    state,
-    ICPCanister
-} from '../backend';
+import { state, ICPCanister } from '../backend';
 import { sha224 } from 'hash.js';
 import { is_signer } from '../signers';
 import {
@@ -70,9 +67,10 @@ function* perform_checks(
         };
     }
 
-    const account_balance_result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
-        account: binary_address_from_principal(ic.id(), 0)
-    });
+    const account_balance_result: CanisterResult<Tokens> =
+        yield ICPCanister.account_balance({
+            account: binary_address_from_principal(ic.id(), 0)
+        });
 
     if (account_balance_result.ok === undefined) {
         return {
@@ -80,7 +78,8 @@ function* perform_checks(
         };
     }
 
-    const transfer_fee_result: CanisterResult<TransferFee> = yield ICPCanister.transfer_fee({});
+    const transfer_fee_result: CanisterResult<TransferFee> =
+        yield ICPCanister.transfer_fee({});
 
     if (transfer_fee_result.ok === undefined) {
         return {
@@ -91,13 +90,14 @@ function* perform_checks(
     const account_balance = account_balance_result.ok.e8s;
     const transfer_fee = transfer_fee_result.ok.transfer_fee.e8s;
 
-    if (account_balance < (amount + transfer_fee)) {
+    if (account_balance < amount + transfer_fee) {
         return {
             err: 'Insufficient funds'
         };
     }
 
-    const randomness_canister_result: CanisterResult<blob> = yield ManagementCanister.raw_rand();
+    const randomness_canister_result: CanisterResult<blob> =
+        yield ManagementCanister.raw_rand();
 
     if (randomness_canister_result.ok === undefined) {
         return {
@@ -137,7 +137,7 @@ function get_mutator(
             rejected: false,
             rejected_at: null
         };
-    
+
         return {
             ok: true
         };

@@ -1,11 +1,4 @@
-import {
-    blob,
-    ic,
-    ok,
-    nat8,
-    Principal,
-    UpdateAsync
-} from 'azle';
+import { blob, ic, ok, nat8, Principal, UpdateAsync } from 'azle';
 import { state } from '../backend';
 import { sha224 } from 'hash.js';
 import { is_signer } from '../signers';
@@ -23,11 +16,7 @@ export function* propose_threshold(
 ): UpdateAsync<DefaultResult> {
     const caller = ic.caller();
 
-    const checks_result = perform_checks(
-        caller,
-        threshold,
-        state.signers
-    );
+    const checks_result = perform_checks(caller, threshold, state.signers);
 
     if (!ok(checks_result)) {
         return {
@@ -45,12 +34,7 @@ export function* propose_threshold(
 
     const randomness = randomness_result.ok;
 
-    const mutator = get_mutator(
-        caller,
-        randomness,
-        description,
-        threshold
-    );
+    const mutator = get_mutator(caller, randomness, description, threshold);
 
     const mutator_result = mutator();
 
@@ -71,7 +55,7 @@ function perform_checks(
     if (threshold === 0) {
         return {
             err: 'Threshold cannot be 0'
-        }
+        };
     }
 
     if (threshold > Object.keys(signers).length) {
@@ -106,7 +90,7 @@ function get_mutator(
             rejected: false,
             rejected_at: null
         };
-    
+
         return {
             ok: true
         };

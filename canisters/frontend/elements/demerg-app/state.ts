@@ -1,7 +1,4 @@
-import {
-    ActorSubclass,
-    Identity
-} from '@dfinity/agent';
+import { ActorSubclass, Identity } from '@dfinity/agent';
 import { Principal } from '@dfinity/principal';
 import { _SERVICE } from '../../dfx_generated/backend/backend.did';
 

@@ -2,15 +2,9 @@ import { nat64 } from 'azle';
 import { AuthClient } from '@dfinity/auth-client';
 import { createActor } from '../../dfx_generated/backend';
 import { _SERVICE } from '../../dfx_generated/backend/backend.did';
-import {
-    html,
-    render as litRender
-} from 'lit-html';
+import { html, render as litRender } from 'lit-html';
 import { createObjectStore } from 'reduxular';
-import { 
-    InitialState,
-    State
-} from './state';
+import { InitialState, State } from './state';
 
 import '@ui5/webcomponents/dist/Label.js';
 import '@ui5/webcomponents/dist/Link.js';
@@ -29,8 +23,12 @@ class DemergApp extends HTMLElement {
     shadow = this.attachShadow({
         mode: 'closed'
     });
-    store = createObjectStore(InitialState, (state: State) => litRender(this.render(state), this.shadow), this);
-    
+    store = createObjectStore(
+        InitialState,
+        (state: State) => litRender(this.render(state), this.shadow),
+        this
+    );
+
     connectedCallback() {
         this.authenticate();
     }
@@ -40,8 +38,7 @@ class DemergApp extends HTMLElement {
 
         if (await authClient.isAuthenticated()) {
             this.store.identity = authClient.getIdentity();
-        }
-        else {
+        } else {
             await new Promise((resolve, reject) => {
                 authClient.login({
                     identityProvider: window.process.env.II_PROVIDER_URL as any,
@@ -92,7 +89,12 @@ class DemergApp extends HTMLElement {
                 >
                     Multisig Vault
                 </ui5-link>
-                <ui5-label>My Principal: ${state.identity === null ? 'Loading...' : state.identity.getPrincipal().toString()}</ui5-label>
+                <ui5-label
+                    >My Principal:
+                    ${state.identity === null
+                        ? 'Loading...'
+                        : state.identity.getPrincipal().toString()}</ui5-label
+                >
                 <ui5-link
                     slot="endContent"
                     href="https://github.com/demergent-labs/multisig_vault"
@@ -120,7 +122,8 @@ class DemergApp extends HTMLElement {
                     <demerg-signers
                         .backend=${state.backend}
                         .signers=${state.signers}
-                        @signers-changed=${(e: SignersChangedEvent) => this.store.signers = e.detail}
+                        @signers-changed=${(e: SignersChangedEvent) =>
+                            (this.store.signers = e.detail)}
                     ></demerg-signers>
                 </div>
 
@@ -136,7 +139,9 @@ class DemergApp extends HTMLElement {
 
 window.customElements.define('demerg-app', DemergApp);
 
-export function sort_created_at_descending<T extends { created_at: nat64 }>(proposals: T[]): T[] {
+export function sort_created_at_descending<T extends { created_at: nat64 }>(
+    proposals: T[]
+): T[] {
     return [...proposals].sort((a, b) => {
         if (a.created_at > b.created_at) {
             return -1;

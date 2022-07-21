@@ -18,13 +18,11 @@ import {
     ManagementCanister
 } from 'azle/canisters/management';
 import { process } from './process_polyfill';
-import {
-    ControllersInfoResult,
-    State,
-    VaultBalanceResult
-} from './types';
+import { ControllersInfoResult, State, VaultBalanceResult } from './types';
 
-export const ICPCanister = ic.canisters.Ledger<Ledger>(Principal.fromText(process.env.ICP_LEDGER_CANISTER_ID));
+export const ICPCanister = ic.canisters.Ledger<Ledger>(
+    Principal.fromText(process.env.ICP_LEDGER_CANISTER_ID)
+);
 
 export let state: State = {
     frontend_cycle_stats: {
@@ -59,10 +57,7 @@ export let state: State = {
     transfer_proposals: {}
 };
 
-export function init(
-    signers: Principal[],
-    threshold: nat8
-): Init {
+export function init(signers: Principal[], threshold: nat8): Init {
     state.signers = signers.reduce((result, signer) => {
         return {
             ...result,
@@ -74,9 +69,10 @@ export function init(
 }
 
 export function* get_vault_balance(): UpdateAsync<VaultBalanceResult> {
-    const account_balance_canister_result: CanisterResult<Tokens> = yield ICPCanister.account_balance({
-        account: binary_address_from_principal(ic.id(), 0)
-    });
+    const account_balance_canister_result: CanisterResult<Tokens> =
+        yield ICPCanister.account_balance({
+            account: binary_address_from_principal(ic.id(), 0)
+        });
 
     if (account_balance_canister_result.ok === undefined) {
         return {
@@ -97,14 +93,17 @@ export function get_canister_address(): Query<string> {
     return hex_address_from_principal(ic.id(), 0);
 }
 
-export function get_address_from_principal(principal: Principal): Query<string> {
+export function get_address_from_principal(
+    principal: Principal
+): Query<string> {
     return hex_address_from_principal(principal, 0);
 }
 
 export function* get_controllers_info(): UpdateAsync<ControllersInfoResult> {
-    const frontend_canister_result: CanisterResult<CanisterStatusResult> = yield ManagementCanister.canister_status({
-        canister_id: Principal.fromText(process.env.FRONTEND_CANISTER_ID)
-    });
+    const frontend_canister_result: CanisterResult<CanisterStatusResult> =
+        yield ManagementCanister.canister_status({
+            canister_id: Principal.fromText(process.env.FRONTEND_CANISTER_ID)
+        });
 
     if (frontend_canister_result.ok === undefined) {
         return {
@@ -114,9 +113,10 @@ export function* get_controllers_info(): UpdateAsync<ControllersInfoResult> {
 
     const frontend_canister_status_result = frontend_canister_result.ok;
 
-    const backend_canister_result: CanisterResult<CanisterStatusResult> = yield ManagementCanister.canister_status({
-        canister_id: ic.id()
-    });
+    const backend_canister_result: CanisterResult<CanisterStatusResult> =
+        yield ManagementCanister.canister_status({
+            canister_id: ic.id()
+        });
 
     if (backend_canister_result.ok === undefined) {
         return {
@@ -134,10 +134,7 @@ export function* get_controllers_info(): UpdateAsync<ControllersInfoResult> {
     };
 }
 
-export {
-    get_cycle_stats_info,
-    snapshot_cycles
-} from './cycles';
+export { get_cycle_stats_info, snapshot_cycles } from './cycles';
 export {
     get_signers,
     get_signer_proposals,

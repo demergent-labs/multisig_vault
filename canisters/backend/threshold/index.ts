@@ -1,7 +1,4 @@
-import {
-    nat8,
-    Query
-} from 'azle';
+import { nat8, Query } from 'azle';
 import { state } from '../backend';
 import { ThresholdProposal } from '../types';
 

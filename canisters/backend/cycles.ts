@@ -1,11 +1,4 @@
-import {
-    CanisterResult,
-    ic,
-    nat64,
-    Principal,
-    Query,
-    UpdateAsync
-} from 'azle';
+import { CanisterResult, ic, nat64, Principal, Query, UpdateAsync } from 'azle';
 import {
     CanisterStatusResult,
     ManagementCanister
@@ -34,7 +27,8 @@ export function get_cycle_stats_info(): Query<CycleStatsInfo> {
     return {
         frontend: {
             cycles_remaining: state.frontend_cycle_stats.cycles_remaining,
-            cycle_time_remaining: state.frontend_cycle_stats.cycle_time_remaining,
+            cycle_time_remaining:
+                state.frontend_cycle_stats.cycle_time_remaining,
             cycles_per_year: state.frontend_cycle_stats.cycles_per_year,
             cycles_per_month: state.frontend_cycle_stats.cycles_per_month,
             cycles_per_week: state.frontend_cycle_stats.cycles_per_week,
@@ -45,7 +39,8 @@ export function get_cycle_stats_info(): Query<CycleStatsInfo> {
         },
         backend: {
             cycles_remaining: state.backend_cycle_stats.cycles_remaining,
-            cycle_time_remaining: state.backend_cycle_stats.cycle_time_remaining,
+            cycle_time_remaining:
+                state.backend_cycle_stats.cycle_time_remaining,
             cycles_per_year: state.backend_cycle_stats.cycles_per_year,
             cycles_per_month: state.backend_cycle_stats.cycles_per_month,
             cycles_per_week: state.backend_cycle_stats.cycles_per_week,
@@ -58,9 +53,10 @@ export function get_cycle_stats_info(): Query<CycleStatsInfo> {
 }
 
 export function* snapshot_cycles(): UpdateAsync<DefaultResult> {
-    const canister_result: CanisterResult<CanisterStatusResult> = yield ManagementCanister.canister_status({
-        canister_id: Principal.fromText(process.env.FRONTEND_CANISTER_ID)
-    });
+    const canister_result: CanisterResult<CanisterStatusResult> =
+        yield ManagementCanister.canister_status({
+            canister_id: Principal.fromText(process.env.FRONTEND_CANISTER_ID)
+        });
 
     if (canister_result.ok === undefined) {
         return {
@@ -91,24 +87,38 @@ function calculate_updated_cycle_stats(
     current_cycle_stats: CycleStats,
     cycles_remaining: nat64
 ): CycleStats {
-    const cycle_snapshots = sort_cycle_snapshots(calculate_cycle_snapshots(
-        cycles_remaining,
-        current_cycle_stats.cycle_snapshots
-    ));
-    const cycles_per_nanosecond = calculate_cycles_per_nanosecond(cycle_snapshots);
+    const cycle_snapshots = sort_cycle_snapshots(
+        calculate_cycle_snapshots(
+            cycles_remaining,
+            current_cycle_stats.cycle_snapshots
+        )
+    );
+    const cycles_per_nanosecond =
+        calculate_cycles_per_nanosecond(cycle_snapshots);
 
-    const cycle_time_remaining = cycles_per_nanosecond === 0n ? 0n : (cycles_remaining * BigInt(10**DECIMALS)) / cycles_per_nanosecond;
+    const cycle_time_remaining =
+        cycles_per_nanosecond === 0n
+            ? 0n
+            : (cycles_remaining * BigInt(10 ** DECIMALS)) /
+              cycles_per_nanosecond;
 
     return {
         cycles_remaining,
         cycle_time_remaining: cycle_time_remaining,
-        cycles_per_year: (cycles_per_nanosecond * NANOS_PER_YEAR) / BigInt(10**DECIMALS),
-        cycles_per_month: (cycles_per_nanosecond * NANOS_PER_MONTH) / BigInt(10**DECIMALS),
-        cycles_per_week: (cycles_per_nanosecond * NANOS_PER_WEEK) / BigInt(10**DECIMALS),
-        cycles_per_day: (cycles_per_nanosecond * NANOS_PER_DAY) / BigInt(10**DECIMALS),
-        cycles_per_hour: (cycles_per_nanosecond * NANOS_PER_HOUR) / BigInt(10**DECIMALS),
-        cycles_per_min: (cycles_per_nanosecond * NANOS_PER_MINUTE) / BigInt(10**DECIMALS),
-        cycles_per_sec: (cycles_per_nanosecond * NANOS_PER_SECOND) / BigInt(10**DECIMALS),
+        cycles_per_year:
+            (cycles_per_nanosecond * NANOS_PER_YEAR) / BigInt(10 ** DECIMALS),
+        cycles_per_month:
+            (cycles_per_nanosecond * NANOS_PER_MONTH) / BigInt(10 ** DECIMALS),
+        cycles_per_week:
+            (cycles_per_nanosecond * NANOS_PER_WEEK) / BigInt(10 ** DECIMALS),
+        cycles_per_day:
+            (cycles_per_nanosecond * NANOS_PER_DAY) / BigInt(10 ** DECIMALS),
+        cycles_per_hour:
+            (cycles_per_nanosecond * NANOS_PER_HOUR) / BigInt(10 ** DECIMALS),
+        cycles_per_min:
+            (cycles_per_nanosecond * NANOS_PER_MINUTE) / BigInt(10 ** DECIMALS),
+        cycles_per_sec:
+            (cycles_per_nanosecond * NANOS_PER_SECOND) / BigInt(10 ** DECIMALS),
         cycle_snapshots
     };
 }
@@ -128,14 +138,17 @@ function calculate_cycle_snapshots(
     ];
 
     if (updated_cycle_snapshots.length > CYCLE_SNAPSHOTS_LENGTH) {
-        return updated_cycle_snapshots.slice(updated_cycle_snapshots.length - CYCLE_SNAPSHOTS_LENGTH);
-    }
-    else {
+        return updated_cycle_snapshots.slice(
+            updated_cycle_snapshots.length - CYCLE_SNAPSHOTS_LENGTH
+        );
+    } else {
         return updated_cycle_snapshots;
     }
 }
 
-function sort_cycle_snapshots(cycle_snapshots: CycleSnapshot[]): CycleSnapshot[] {
+function sort_cycle_snapshots(
+    cycle_snapshots: CycleSnapshot[]
+): CycleSnapshot[] {
     const sorted_cycle_snapshots = [...cycle_snapshots].sort((a, b) => {
         if (a.timestamp > b.timestamp) {
             return -1;
@@ -151,7 +164,9 @@ function sort_cycle_snapshots(cycle_snapshots: CycleSnapshot[]): CycleSnapshot[]
     return sorted_cycle_snapshots;
 }
 
-function calculate_cycles_per_nanosecond(cycle_snapshots: CycleSnapshot[]): nat64 {
+function calculate_cycles_per_nanosecond(
+    cycle_snapshots: CycleSnapshot[]
+): nat64 {
     const deltas = cycle_snapshots.map((cycle_snapshot, index) => {
         const next_cycle_snapshot = cycle_snapshots[index + 1];
 
@@ -160,10 +175,12 @@ function calculate_cycles_per_nanosecond(cycle_snapshots: CycleSnapshot[]): nat6
                 weight: 0n,
                 weighted_value: 0n
             };
-        }
-        else {
-            const cycle_delta = cycle_snapshot.cycles_remaining - next_cycle_snapshot.cycles_remaining;
-            const time_delta = cycle_snapshot.timestamp - next_cycle_snapshot.timestamp;
+        } else {
+            const cycle_delta =
+                cycle_snapshot.cycles_remaining -
+                next_cycle_snapshot.cycles_remaining;
+            const time_delta =
+                cycle_snapshot.timestamp - next_cycle_snapshot.timestamp;
 
             if (cycle_delta >= 0) {
                 return {
@@ -187,7 +204,11 @@ function calculate_cycles_per_nanosecond(cycle_snapshots: CycleSnapshot[]): nat6
         return result + delta.weight;
     }, 0n);
 
-    const average = sum_of_weights === 0n ? 0n : (sum_of_weighted_values * BigInt(10**DECIMALS)) / sum_of_weights;
+    const average =
+        sum_of_weights === 0n
+            ? 0n
+            : (sum_of_weighted_values * BigInt(10 ** DECIMALS)) /
+              sum_of_weights;
 
     return average;
 }

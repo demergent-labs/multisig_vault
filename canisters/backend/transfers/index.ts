@@ -1,9 +1,6 @@
 import { Query } from 'azle';
 import { state } from '../backend';
-import {
-    Transfer,
-    TransferProposal
-} from '../types';
+import { Transfer, TransferProposal } from '../types';
 
 export function get_transfers(): Query<Transfer[]> {
     return Object.values(state.transfers) as Transfer[];

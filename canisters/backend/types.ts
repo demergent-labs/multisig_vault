@@ -1,12 +1,4 @@
-import {
-    Async,
-    blob,
-    Principal,
-    Variant,
-    nat64,
-    nat8,
-    Opt
-} from 'azle';
+import { Async, blob, Principal, Variant, nat64, nat8, Opt } from 'azle';
 import { TransferError } from 'azle/canisters/ledger';
 
 export type State = {
@@ -84,12 +76,12 @@ export type DefaultResult = Variant<{
 }>;
 
 export type VoteOnProposalResult = Variant<{
-    ok: VoteOnProposalAction
+    ok: VoteOnProposalAction;
     err: string;
 }>;
 
 export type VoteOnTransferProposalResult = Variant<{
-    ok: VoteOnProposalAction
+    ok: VoteOnProposalAction;
     err: Variant<{
         message: string;
         transfer_error: TransferError;
