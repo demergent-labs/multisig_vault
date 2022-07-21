@@ -1,10 +1,4 @@
-import {
-    blob,
-    ic,
-    ok,
-    Principal,
-    UpdateAsync
-} from 'azle';
+import { blob, ic, ok, Principal, UpdateAsync } from 'azle';
 import { state } from '../backend';
 import { sha224 } from 'hash.js';
 import { is_signer } from './index';
@@ -22,12 +16,7 @@ export function* propose_signer(
     remove: boolean
 ): UpdateAsync<DefaultResult> {
     const caller = ic.caller();
-    const checks_result = perform_checks(
-        caller,
-        state.signers,
-        signer,
-        remove
-    );
+    const checks_result = perform_checks(caller, state.signers, signer, remove);
 
     if (!ok(checks_result)) {
         return {
@@ -70,10 +59,7 @@ function perform_checks(
         };
     }
 
-    if (
-        remove === true &&
-        signers[signer.toText()] === undefined
-    ) {
+    if (remove === true && signers[signer.toText()] === undefined) {
         return {
             err: `Signer ${signer} does not exist`
         };
@@ -107,7 +93,7 @@ function get_mutator(
             rejected: false,
             rejected_at: null
         };
-    
+
         return {
             ok: true
         };

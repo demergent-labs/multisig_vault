@@ -1,7 +1,4 @@
-import {
-    Principal,
-    Query
-} from 'azle';
+import { Principal, Query } from 'azle';
 import { state } from '../backend';
 import { SignerProposal } from '../types';
 

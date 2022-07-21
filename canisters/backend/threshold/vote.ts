@@ -1,9 +1,4 @@
-import {
-    ic,
-    ok,
-    Principal,
-    Update
-} from 'azle';
+import { ic, ok, Principal, Update } from 'azle';
 import { state } from '../backend';
 import { is_signer } from '../signers';
 import {
@@ -86,7 +81,9 @@ function perform_checks(
         };
     }
 
-    const already_voted = threshold_proposal.votes.find((vote) => vote.voter === caller) !== undefined;
+    const already_voted =
+        threshold_proposal.votes.find((vote) => vote.voter === caller) !==
+        undefined;
 
     if (already_voted === true) {
         return {
@@ -97,7 +94,7 @@ function perform_checks(
     if (threshold_proposal.threshold === 0) {
         return {
             err: 'Threshold cannot be 0'
-        }
+        };
     }
 
     if (threshold_proposal.threshold > Object.keys(signers).length) {
@@ -106,12 +103,13 @@ function perform_checks(
         };
     }
 
-    const open_transfer_proposals = Object.values(transfer_proposals).filter((transfer_proposal) => transfer_proposal?.adopted === false && transfer_proposal?.rejected === false);
+    const open_transfer_proposals = Object.values(transfer_proposals).filter(
+        (transfer_proposal) =>
+            transfer_proposal?.adopted === false &&
+            transfer_proposal?.rejected === false
+    );
 
-    if (
-        adopt === true &&
-        open_transfer_proposals.length > 0
-    ) {
+    if (adopt === true && open_transfer_proposals.length > 0) {
         return {
             err: `All transfer proposals must be adopted or rejected before changing the threshold`
         };
@@ -148,7 +146,7 @@ function get_mutator(
             threshold_proposal.votes = new_votes;
             threshold_proposal.adopted = true;
             threshold_proposal.adopted_at = ic.time();
-    
+
             return {
                 ok: {
                     adopted: null

@@ -8,10 +8,7 @@ import {
     CycleStatsInfo,
     _SERVICE
 } from '../dfx_generated/backend/backend.did';
-import {
-    html,
-    render as litRender
-} from 'lit-html';
+import { html, render as litRender } from 'lit-html';
 import { createObjectStore } from 'reduxular';
 
 import '@ui5/webcomponents/dist/BusyIndicator.js';
@@ -56,14 +53,17 @@ const InitialState: State = {
     error_message: '',
     loading_cycles: false,
     show_error_dialog: false
-
 };
 
 class DemergStatsAndInfo extends HTMLElement {
     shadow = this.attachShadow({
         mode: 'closed'
     });
-    store = createObjectStore(InitialState, (state: State) => litRender(this.render(state), this.shadow), this);
+    store = createObjectStore(
+        InitialState,
+        (state: State) => litRender(this.render(state), this.shadow),
+        this
+    );
 
     set backend(value: State['backend']) {
         if (this.store.backend === value) {
@@ -84,7 +84,8 @@ class DemergStatsAndInfo extends HTMLElement {
 
     async load_canister_address() {
         if (this.store.backend === null) {
-            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.error_message =
+                'You are not authenticated, please refresh.';
             this.store.show_error_dialog = true;
 
             return;
@@ -100,7 +101,8 @@ class DemergStatsAndInfo extends HTMLElement {
 
     async load_canister_principal() {
         if (this.store.backend === null) {
-            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.error_message =
+                'You are not authenticated, please refresh.';
             this.store.show_error_dialog = true;
 
             return;
@@ -116,30 +118,32 @@ class DemergStatsAndInfo extends HTMLElement {
 
     async load_controllers_info() {
         if (this.store.backend === null) {
-            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.error_message =
+                'You are not authenticated, please refresh.';
             this.store.show_error_dialog = true;
 
             return;
         }
 
-        const controllers_info_result = await this.store.backend.get_controllers_info();
-        
+        const controllers_info_result =
+            await this.store.backend.get_controllers_info();
+
         if ('ok' in controllers_info_result) {
             this.store.controllers_info = controllers_info_result.ok;
-        }
-        else {
+        } else {
             this.handle_error((controllers_info_result as any).err);
         }
     }
 
     async load_cycle_stats() {
         if (this.store.backend === null) {
-            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.error_message =
+                'You are not authenticated, please refresh.';
             this.store.show_error_dialog = true;
 
             return;
         }
-        
+
         await this.snapshot_cycles();
         const cycleStatsInfo = await this.store.backend.get_cycle_stats_info();
 
@@ -148,7 +152,8 @@ class DemergStatsAndInfo extends HTMLElement {
 
     async snapshot_cycles() {
         if (this.store.backend === null) {
-            this.store.error_message = 'You are not authenticated, please refresh.'
+            this.store.error_message =
+                'You are not authenticated, please refresh.';
             this.store.show_error_dialog = true;
 
             return;
@@ -165,12 +170,12 @@ class DemergStatsAndInfo extends HTMLElement {
         console.error(error);
 
         if (error.message !== undefined) {
-            this.store.error_message = 'There was an error. See the console for more information.';
-        }
-        else if (error.startsWith('Rejection code')) {
-            this.store.error_message = 'There was an error. See the console for more information.';
-        }
-        else {
+            this.store.error_message =
+                'There was an error. See the console for more information.';
+        } else if (error.startsWith('Rejection code')) {
+            this.store.error_message =
+                'There was an error. See the console for more information.';
+        } else {
             this.store.error_message = error;
         }
 
@@ -178,34 +183,133 @@ class DemergStatsAndInfo extends HTMLElement {
     }
 
     render(state: State) {
-        const canister_address_text = state.canister_address.loading === true ? 'Loading...' : state.canister_address.value;
+        const canister_address_text =
+            state.canister_address.loading === true
+                ? 'Loading...'
+                : state.canister_address.value;
 
-        const frontend_cycles_remaining = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_remaining);
-        const frontend_cycle_time_remaining = state.cycles_stats_info === null ? 'Loading...' : nanoseconds_to_time_remaining_string(state.cycles_stats_info.frontend.cycle_time_remaining);
-        const frontend_cycles_per_year = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_year);
-        const frontend_cycles_per_month = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_month);
-        const frontend_cycles_per_week = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_week);
-        const frontend_cycles_per_day = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_day);
-        const frontend_cycles_per_hour = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_hour);
-        const frontend_cycles_per_min = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_min);
-        const frontend_cycles_per_sec = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.frontend.cycles_per_sec);
+        const frontend_cycles_remaining =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.frontend.cycles_remaining
+                  );
+        const frontend_cycle_time_remaining =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : nanoseconds_to_time_remaining_string(
+                      state.cycles_stats_info.frontend.cycle_time_remaining
+                  );
+        const frontend_cycles_per_year =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.frontend.cycles_per_year
+                  );
+        const frontend_cycles_per_month =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.frontend.cycles_per_month
+                  );
+        const frontend_cycles_per_week =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.frontend.cycles_per_week
+                  );
+        const frontend_cycles_per_day =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.frontend.cycles_per_day
+                  );
+        const frontend_cycles_per_hour =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.frontend.cycles_per_hour
+                  );
+        const frontend_cycles_per_min =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.frontend.cycles_per_min
+                  );
+        const frontend_cycles_per_sec =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.frontend.cycles_per_sec
+                  );
 
-        const backend_cycles_remaining = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_remaining);
-        const backend_cycle_time_remaining = state.cycles_stats_info === null ? 'Loading...' : nanoseconds_to_time_remaining_string(state.cycles_stats_info.backend.cycle_time_remaining);
-        const backend_cycles_per_year = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_year);
-        const backend_cycles_per_month = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_month);
-        const backend_cycles_per_week = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_week);
-        const backend_cycles_per_day = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_day);
-        const backend_cycles_per_hour = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_hour);
-        const backend_cycles_per_min = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_min);
-        const backend_cycles_per_sec = state.cycles_stats_info === null ? 'Loading...' : separate_cycles(state.cycles_stats_info.backend.cycles_per_sec);
+        const backend_cycles_remaining =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.backend.cycles_remaining
+                  );
+        const backend_cycle_time_remaining =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : nanoseconds_to_time_remaining_string(
+                      state.cycles_stats_info.backend.cycle_time_remaining
+                  );
+        const backend_cycles_per_year =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.backend.cycles_per_year
+                  );
+        const backend_cycles_per_month =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.backend.cycles_per_month
+                  );
+        const backend_cycles_per_week =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.backend.cycles_per_week
+                  );
+        const backend_cycles_per_day =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.backend.cycles_per_day
+                  );
+        const backend_cycles_per_hour =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.backend.cycles_per_hour
+                  );
+        const backend_cycles_per_min =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.backend.cycles_per_min
+                  );
+        const backend_cycles_per_sec =
+            state.cycles_stats_info === null
+                ? 'Loading...'
+                : separate_cycles(
+                      state.cycles_stats_info.backend.cycles_per_sec
+                  );
 
         return html`
-            <link rel="stylesheet" href="/index.css">
+            <link
+                rel="stylesheet"
+                href="/index.css"
+            />
 
             <ui5-card>
                 <ui5-card-header title-text="Stats and Info">
-                    <div class="card-header-action-container" slot="action">
+                    <div
+                        class="card-header-action-container"
+                        slot="action"
+                    >
                         <ui5-busy-indicator
                             size="Small"
                             .active=${state.loading_cycles}
@@ -215,7 +319,7 @@ class DemergStatsAndInfo extends HTMLElement {
                                 design="Emphasized"
                                 class="table-main-button"
                                 @click=${async () => {
-                                    this.store.loading_cycles =  true;
+                                    this.store.loading_cycles = true;
                                     await this.load_cycle_stats();
                                     this.store.loading_cycles = false;
                                 }}
@@ -227,55 +331,94 @@ class DemergStatsAndInfo extends HTMLElement {
                 </ui5-card-header>
 
                 <ui5-table class="proposals-table">
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Canister Name</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Principal</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Cycles Remaining</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Cycle Time Remaining</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Cycles/year</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Cycles/month</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Cycles/week</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Cycles/day</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Cycles/hour</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Cycles/min</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Cycles/sec</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>ICP Address</ui5-label>
                     </ui5-table-column>
 
-                    <ui5-table-column slot="columns" demand-popin>
+                    <ui5-table-column
+                        slot="columns"
+                        demand-popin
+                    >
                         <ui5-label>Controllers</ui5-label>
                     </ui5-table-column>
 
@@ -285,7 +428,10 @@ class DemergStatsAndInfo extends HTMLElement {
                         </ui5-table-cell>
 
                         <ui5-table-cell>
-                            <ui5-label>${window.process.env.FRONTEND_CANISTER_ID}</ui5-label>
+                            <ui5-label
+                                >${window.process.env
+                                    .FRONTEND_CANISTER_ID}</ui5-label
+                            >
                         </ui5-table-cell>
 
                         <ui5-table-cell>
@@ -293,7 +439,9 @@ class DemergStatsAndInfo extends HTMLElement {
                         </ui5-table-cell>
 
                         <ui5-table-cell>
-                            <ui5-label>${frontend_cycle_time_remaining}</ui5-label>
+                            <ui5-label
+                                >${frontend_cycle_time_remaining}</ui5-label
+                            >
                         </ui5-table-cell>
 
                         <ui5-table-cell>
@@ -329,7 +477,16 @@ class DemergStatsAndInfo extends HTMLElement {
                         </ui5-table-cell>
 
                         <ui5-table-cell>
-                            <ui5-label>${state.controllers_info === null ? 'Loading...' : state.controllers_info.frontend.length === 0 ? 'None' : state.controllers_info.frontend.join(' / ')}</ui5-label>
+                            <ui5-label
+                                >${state.controllers_info === null
+                                    ? 'Loading...'
+                                    : state.controllers_info.frontend.length ===
+                                      0
+                                    ? 'None'
+                                    : state.controllers_info.frontend.join(
+                                          ' / '
+                                      )}</ui5-label
+                            >
                         </ui5-table-cell>
                     </ui5-table-row>
 
@@ -339,7 +496,10 @@ class DemergStatsAndInfo extends HTMLElement {
                         </ui5-table-cell>
 
                         <ui5-table-cell>
-                            <ui5-label>${window.process.env.BACKEND_CANISTER_ID}</ui5-label>
+                            <ui5-label
+                                >${window.process.env
+                                    .BACKEND_CANISTER_ID}</ui5-label
+                            >
                         </ui5-table-cell>
 
                         <ui5-table-cell>
@@ -347,7 +507,9 @@ class DemergStatsAndInfo extends HTMLElement {
                         </ui5-table-cell>
 
                         <ui5-table-cell>
-                            <ui5-label>${backend_cycle_time_remaining}</ui5-label>
+                            <ui5-label
+                                >${backend_cycle_time_remaining}</ui5-label
+                            >
                         </ui5-table-cell>
 
                         <ui5-table-cell>
@@ -383,7 +545,16 @@ class DemergStatsAndInfo extends HTMLElement {
                         </ui5-table-cell>
 
                         <ui5-table-cell>
-                            <ui5-label>${state.controllers_info === null ? 'Loading...' : state.controllers_info.backend.length === 0 ? 'None' : state.controllers_info.backend.join(' / ')}</ui5-label>
+                            <ui5-label
+                                >${state.controllers_info === null
+                                    ? 'Loading...'
+                                    : state.controllers_info.backend.length ===
+                                      0
+                                    ? 'None'
+                                    : state.controllers_info.backend.join(
+                                          ' / '
+                                      )}</ui5-label
+                            >
                         </ui5-table-cell>
                     </ui5-table-row>
                 </ui5-table>
@@ -400,7 +571,9 @@ function separate_cycles(cycles: string | number | bigint) {
         .split('')
         .reverse()
         .reduce((result, char, index) => {
-            return `${result}${index !== 0 && index % 3 === 0 ? '_' : ''}${char}`;
+            return `${result}${
+                index !== 0 && index % 3 === 0 ? '_' : ''
+            }${char}`;
         }, '')
         .split('')
         .reverse()
@@ -425,20 +598,83 @@ function nanoseconds_to_time_remaining_string(nanoseconds: nat64): string {
     const total_seconds = nanoseconds / NANOS_PER_SECOND;
 
     const remaining_years = total_years;
-    const remaining_months = total_years === 0n ? total_months : (nanoseconds % NANOS_PER_YEAR) / NANOS_PER_MONTH;
-    const remaining_weeks = total_months === 0n ? total_weeks : (nanoseconds % NANOS_PER_MONTH) / NANOS_PER_WEEK;
-    const remaining_days = total_weeks === 0n ? total_days : (nanoseconds % NANOS_PER_WEEK) / NANOS_PER_DAY;
-    const remaining_hours = total_days === 0n ? total_hours : (nanoseconds % NANOS_PER_DAY) / NANOS_PER_HOUR;
-    const remaining_minutes = total_hours === 0n ? total_minutes : (nanoseconds % NANOS_PER_HOUR) / NANOS_PER_MINUTE;
-    const remaining_seconds = total_minutes === 0n ? total_seconds : (nanoseconds % NANOS_PER_MINUTE) / NANOS_PER_SECOND;
+    const remaining_months =
+        total_years === 0n
+            ? total_months
+            : (nanoseconds % NANOS_PER_YEAR) / NANOS_PER_MONTH;
+    const remaining_weeks =
+        total_months === 0n
+            ? total_weeks
+            : (nanoseconds % NANOS_PER_MONTH) / NANOS_PER_WEEK;
+    const remaining_days =
+        total_weeks === 0n
+            ? total_days
+            : (nanoseconds % NANOS_PER_WEEK) / NANOS_PER_DAY;
+    const remaining_hours =
+        total_days === 0n
+            ? total_hours
+            : (nanoseconds % NANOS_PER_DAY) / NANOS_PER_HOUR;
+    const remaining_minutes =
+        total_hours === 0n
+            ? total_minutes
+            : (nanoseconds % NANOS_PER_HOUR) / NANOS_PER_MINUTE;
+    const remaining_seconds =
+        total_minutes === 0n
+            ? total_seconds
+            : (nanoseconds % NANOS_PER_MINUTE) / NANOS_PER_SECOND;
 
-    const years_string = remaining_years === 0n ? [] : [`${remaining_years} ${remaining_years === 1n ? 'year' : 'years'}`];
-    const months_string = remaining_months === 0n ? [] : [`${remaining_months} ${remaining_months === 1n ? 'month' : 'months'}`];
-    const weeks_string = remaining_weeks === 0n ? [] : [`${remaining_weeks} ${remaining_weeks === 1n ? 'week' : 'weeks'}`];
-    const days_string = remaining_days === 0n ? [] : [`${remaining_days} ${remaining_days === 1n ? 'day' : 'days'}`];
-    const hours_string = remaining_hours === 0n ? [] : [`${remaining_hours} ${remaining_hours === 1n ? 'hour' : 'hours'}`];
-    const minutes_string = remaining_minutes === 0n ? [] : [`${remaining_minutes} ${remaining_minutes === 1n ? 'minute' : 'minutes'}`];
-    const seconds_string = remaining_seconds === 0n ? [] : [`${remaining_seconds} ${remaining_seconds === 1n ? 'second' : 'seconds'}`];
+    const years_string =
+        remaining_years === 0n
+            ? []
+            : [
+                  `${remaining_years} ${
+                      remaining_years === 1n ? 'year' : 'years'
+                  }`
+              ];
+    const months_string =
+        remaining_months === 0n
+            ? []
+            : [
+                  `${remaining_months} ${
+                      remaining_months === 1n ? 'month' : 'months'
+                  }`
+              ];
+    const weeks_string =
+        remaining_weeks === 0n
+            ? []
+            : [
+                  `${remaining_weeks} ${
+                      remaining_weeks === 1n ? 'week' : 'weeks'
+                  }`
+              ];
+    const days_string =
+        remaining_days === 0n
+            ? []
+            : [`${remaining_days} ${remaining_days === 1n ? 'day' : 'days'}`];
+    const hours_string =
+        remaining_hours === 0n
+            ? []
+            : [
+                  `${remaining_hours} ${
+                      remaining_hours === 1n ? 'hour' : 'hours'
+                  }`
+              ];
+    const minutes_string =
+        remaining_minutes === 0n
+            ? []
+            : [
+                  `${remaining_minutes} ${
+                      remaining_minutes === 1n ? 'minute' : 'minutes'
+                  }`
+              ];
+    const seconds_string =
+        remaining_seconds === 0n
+            ? []
+            : [
+                  `${remaining_seconds} ${
+                      remaining_seconds === 1n ? 'second' : 'seconds'
+                  }`
+              ];
 
     return [
         ...years_string,

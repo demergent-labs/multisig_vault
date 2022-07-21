@@ -1,19 +1,10 @@
-import {
-    CanisterResult,
-    ic,
-    ok,
-    Principal,
-    UpdateAsync
-} from 'azle';
+import { CanisterResult, ic, ok, Principal, UpdateAsync } from 'azle';
 import {
     binary_address_from_address,
     TransferFee,
     TransferResult
 } from 'azle/canisters/ledger';
-import {
-    ICPCanister,
-    state
-} from '../backend';
+import { ICPCanister, state } from '../backend';
 import { is_signer } from '../signers';
 import {
     State,
@@ -29,7 +20,7 @@ export function* vote_on_transfer_proposal(
     adopt: boolean
 ): UpdateAsync<VoteOnTransferProposalResult> {
     const caller = ic.caller();
-    
+
     const checks_result = perform_checks(
         caller,
         transfer_proposal_id,
@@ -46,14 +37,10 @@ export function* vote_on_transfer_proposal(
 
     let transfer_proposal = checks_result.ok;
 
-    const mutator = get_mutator(
-        caller,
-        adopt,
-        state,
-        transfer_proposal
-    );
+    const mutator = get_mutator(caller, adopt, state, transfer_proposal);
 
-    const vote_on_proposal_result: VoteOnTransferProposalResult = yield mutator();
+    const vote_on_proposal_result: VoteOnTransferProposalResult =
+        yield mutator();
 
     return vote_on_proposal_result;
 }
@@ -89,7 +76,9 @@ function perform_checks(
         };
     }
 
-    const already_voted = transfer_proposal.votes.find((vote) => vote.voter === caller) !== undefined;
+    const already_voted =
+        transfer_proposal.votes.find((vote) => vote.voter === caller) !==
+        undefined;
 
     if (already_voted === true) {
         return {
@@ -121,8 +110,9 @@ function get_mutator(
 
     if (adopt_votes.length >= state.threshold) {
         return function* () {
-            const transfer_fee_result: CanisterResult<TransferFee> = yield ICPCanister.transfer_fee({});
-    
+            const transfer_fee_result: CanisterResult<TransferFee> =
+                yield ICPCanister.transfer_fee({});
+
             if (!ok(transfer_fee_result)) {
                 return {
                     err: {
@@ -130,18 +120,21 @@ function get_mutator(
                     }
                 };
             }
-    
-            const canister_result: CanisterResult<TransferResult> = yield ICPCanister.transfer({
-                memo: 0n,
-                amount: {
-                    e8s: transfer_proposal.amount,
-                },
-                fee: transfer_fee_result.ok.transfer_fee,
-                from_subaccount: null,
-                to: binary_address_from_address(transfer_proposal.destination_address),
-                created_at_time: null
-            });
-    
+
+            const canister_result: CanisterResult<TransferResult> =
+                yield ICPCanister.transfer({
+                    memo: 0n,
+                    amount: {
+                        e8s: transfer_proposal.amount
+                    },
+                    fee: transfer_fee_result.ok.transfer_fee,
+                    from_subaccount: null,
+                    to: binary_address_from_address(
+                        transfer_proposal.destination_address
+                    ),
+                    created_at_time: null
+                });
+
             if (!ok(canister_result)) {
                 return {
                     err: {
@@ -149,9 +142,9 @@ function get_mutator(
                     }
                 };
             }
-    
+
             const transfer_result = canister_result.ok;
-    
+
             if (transfer_result.Err !== undefined) {
                 return {
                     err: {
@@ -159,11 +152,11 @@ function get_mutator(
                     }
                 };
             }
-    
+
             transfer_proposal.votes = new_votes;
             transfer_proposal.adopted = true;
             transfer_proposal.adopted_at = ic.time();
-    
+
             return {
                 ok: {
                     adopted: null
@@ -172,7 +165,10 @@ function get_mutator(
         };
     }
 
-    if (reject_votes.length > Object.keys(state.signers).length - state.threshold) {
+    if (
+        reject_votes.length >
+        Object.keys(state.signers).length - state.threshold
+    ) {
         transfer_proposal.votes = new_votes;
         transfer_proposal.rejected = true;
         transfer_proposal.rejected_at = ic.time();

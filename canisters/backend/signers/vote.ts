@@ -1,9 +1,4 @@
-import {
-    ic,
-    ok,
-    Principal,
-    Update
-} from 'azle';
+import { ic, ok, Principal, Update } from 'azle';
 import { state } from '../backend';
 import { is_signer } from './index';
 import {
@@ -20,7 +15,7 @@ export function vote_on_signer_proposal(
     adopt: boolean
 ): Update<VoteOnProposalResult> {
     const caller = ic.caller();
-        
+
     const checks_result = perform_checks(
         adopt,
         caller,
@@ -87,7 +82,9 @@ function perform_checks(
         };
     }
 
-    const already_voted = signer_proposal.votes.find((vote) => vote.voter === caller) !== undefined;
+    const already_voted =
+        signer_proposal.votes.find((vote) => vote.voter === caller) !==
+        undefined;
 
     if (already_voted === true) {
         return {
@@ -104,12 +101,13 @@ function perform_checks(
         };
     }
 
-    const open_transfer_proposals = Object.values(transfer_proposals).filter((transfer_proposal) => transfer_proposal?.adopted === false && transfer_proposal?.rejected === false);
+    const open_transfer_proposals = Object.values(transfer_proposals).filter(
+        (transfer_proposal) =>
+            transfer_proposal?.adopted === false &&
+            transfer_proposal?.rejected === false
+    );
 
-    if (
-        adopt === true &&
-        open_transfer_proposals.length > 0
-    ) {
+    if (adopt === true && open_transfer_proposals.length > 0) {
         return {
             err: `All transfer proposals must be adopted or rejected before changing signers`
         };
@@ -152,24 +150,24 @@ function get_mutator(
         return () => {
             if (signer_proposal.remove === true) {
                 delete state.signers[signer_proposal.signer.toText()];
+            } else {
+                state.signers[signer_proposal.signer.toText()] =
+                    signer_proposal.signer;
             }
-            else {
-                state.signers[signer_proposal.signer.toText()] = signer_proposal.signer;
-            }
-    
+
             signer_proposal.votes = new_votes;
             signer_proposal.adopted = true;
             signer_proposal.adopted_at = ic.time();
-            
+
             return {
                 ok: {
                     adopted: null
                 }
             };
-        }
+        };
     }
 
-    if (reject_votes.length > Object.keys(signers).length - threshold) {        
+    if (reject_votes.length > Object.keys(signers).length - threshold) {
         return () => {
             signer_proposal.votes = new_votes;
             signer_proposal.rejected = true;
@@ -191,5 +189,5 @@ function get_mutator(
                 voted: null
             }
         };
-    }
+    };
 }
