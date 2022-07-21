@@ -6,7 +6,6 @@ on:
     pull_request: # Runs on pull requests to any branch
 jobs:
     basic-integration-tests:
-        needs: release-candidate-deploy
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
