@@ -4,11 +4,11 @@ import { createActor } from '../canisters/frontend/dfx_generated/backend';
 
 // TODO need to get ICP Ledger and Internet Identity canisters working in GitHub Actions
 
-const backend_canister = createActor('rrkah-fqaaa-aaaaa-aaaaq-cai', {
-    agentOptions: {
-        host: 'http://127.0.0.1:8000'
-    }
-});
+// const backend_canister = createActor('rrkah-fqaaa-aaaaa-aaaaq-cai', {
+//     agentOptions: {
+//         host: 'http://127.0.0.1:8000'
+//     }
+// });
 
 const tests: Test[] = [
     {
