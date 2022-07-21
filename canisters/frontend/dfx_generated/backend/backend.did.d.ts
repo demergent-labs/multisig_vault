@@ -1,4 +1,6 @@
 import type { Principal } from '@dfinity/principal';
+import type { ActorMethod } from '@dfinity/agent';
+
 export interface AccountBalanceArgs { 'account' : Array<number> }
 export interface Archive { 'canister_id' : Principal }
 export interface Archives { 'archives' : Array<Archive> }
@@ -109,9 +111,7 @@ export type QueryArchiveError = {
     }
   } |
   { 'Other' : { 'error_message' : string, 'error_code' : bigint } };
-export type QueryArchiveFn = (arg_0: GetBlocksArgs) => Promise<
-    QueryArchiveResult
-  >;
+export type QueryArchiveFn = ActorMethod<[GetBlocksArgs], QueryArchiveResult>;
 export type QueryArchiveResult = { 'Ok' : BlockRange } |
   { 'Err' : QueryArchiveError };
 export interface QueryBlocksResponse {
@@ -207,37 +207,32 @@ export type VoteOnProposalResult = { 'ok' : VoteOnProposalAction } |
 export type VoteOnTransferProposalResult = { 'ok' : VoteOnProposalAction } |
   { 'err' : { 'transfer_error' : TransferError } | { 'message' : string } };
 export interface _SERVICE {
-  'get_address_from_principal' : (arg_0: Principal) => Promise<string>,
-  'get_canister_address' : () => Promise<string>,
-  'get_canister_principal' : () => Promise<Principal>,
-  'get_controllers_info' : () => Promise<ControllersInfoResult>,
-  'get_cycle_stats_info' : () => Promise<CycleStatsInfo>,
-  'get_signer_proposals' : () => Promise<Array<SignerProposal>>,
-  'get_signers' : () => Promise<Array<Principal>>,
-  'get_threshold' : () => Promise<number>,
-  'get_threshold_proposals' : () => Promise<Array<ThresholdProposal>>,
-  'get_transfer_proposals' : () => Promise<Array<TransferProposal>>,
-  'get_transfers' : () => Promise<Array<Transfer>>,
-  'get_vault_balance' : () => Promise<VaultBalanceResult>,
-  'propose_signer' : (
-      arg_0: string,
-      arg_1: Principal,
-      arg_2: boolean,
-    ) => Promise<DefaultResult>,
-  'propose_threshold' : (arg_0: string, arg_1: number) => Promise<
-      DefaultResult
-    >,
-  'propose_transfer' : (arg_0: string, arg_1: string, arg_2: bigint) => Promise<
-      DefaultResult
-    >,
-  'snapshot_cycles' : () => Promise<DefaultResult>,
-  'vote_on_signer_proposal' : (arg_0: string, arg_1: boolean) => Promise<
-      VoteOnProposalResult
-    >,
-  'vote_on_threshold_proposal' : (arg_0: string, arg_1: boolean) => Promise<
-      VoteOnProposalResult
-    >,
-  'vote_on_transfer_proposal' : (arg_0: string, arg_1: boolean) => Promise<
-      VoteOnTransferProposalResult
-    >,
+  'get_address_from_principal' : ActorMethod<[Principal], string>,
+  'get_canister_address' : ActorMethod<[], string>,
+  'get_canister_principal' : ActorMethod<[], Principal>,
+  'get_controllers_info' : ActorMethod<[], ControllersInfoResult>,
+  'get_cycle_stats_info' : ActorMethod<[], CycleStatsInfo>,
+  'get_signer_proposals' : ActorMethod<[], Array<SignerProposal>>,
+  'get_signers' : ActorMethod<[], Array<Principal>>,
+  'get_threshold' : ActorMethod<[], number>,
+  'get_threshold_proposals' : ActorMethod<[], Array<ThresholdProposal>>,
+  'get_transfer_proposals' : ActorMethod<[], Array<TransferProposal>>,
+  'get_transfers' : ActorMethod<[], Array<Transfer>>,
+  'get_vault_balance' : ActorMethod<[], VaultBalanceResult>,
+  'propose_signer' : ActorMethod<[string, Principal, boolean], DefaultResult>,
+  'propose_threshold' : ActorMethod<[string, number], DefaultResult>,
+  'propose_transfer' : ActorMethod<[string, string, bigint], DefaultResult>,
+  'snapshot_cycles' : ActorMethod<[], DefaultResult>,
+  'vote_on_signer_proposal' : ActorMethod<
+    [string, boolean],
+    VoteOnProposalResult,
+  >,
+  'vote_on_threshold_proposal' : ActorMethod<
+    [string, boolean],
+    VoteOnProposalResult,
+  >,
+  'vote_on_transfer_proposal' : ActorMethod<
+    [string, boolean],
+    VoteOnTransferProposalResult,
+  >,
 }

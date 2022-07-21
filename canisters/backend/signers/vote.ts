@@ -117,6 +117,7 @@ function perform_checks(
 
     if (
         signer_proposal.remove === true &&
+        adopt === true &&
         Object.keys(signers).length - 1 < threshold
     ) {
         return {

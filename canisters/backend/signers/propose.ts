@@ -1,6 +1,6 @@
 import {
+    blob,
     ic,
-    nat8,
     ok,
     Principal,
     UpdateAsync
@@ -22,7 +22,6 @@ export function* propose_signer(
     remove: boolean
 ): UpdateAsync<DefaultResult> {
     const caller = ic.caller();
-
     const checks_result = perform_checks(
         caller,
         state.signers,
@@ -87,13 +86,13 @@ function perform_checks(
 
 function get_mutator(
     caller: Principal,
-    randomness: nat8[],
+    randomness: blob,
     description: string,
     signer: Principal,
     remove: boolean
 ): DefaultMutator {
     return () => {
-        const id = sha224().update(randomness).digest('hex');
+        const id = sha224().update(Array.from(randomness)).digest('hex');
 
         state.signer_proposals[id] = {
             id,

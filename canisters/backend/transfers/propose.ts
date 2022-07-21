@@ -1,9 +1,9 @@
 import {
     Async,
+    blob,
     CanisterResult,
     ic,
     ok,
-    nat8,
     nat64,
     Principal,
     UpdateAsync
@@ -97,7 +97,7 @@ function* perform_checks(
         };
     }
 
-    const randomness_canister_result: CanisterResult<nat8[]> = yield ManagementCanister.raw_rand();
+    const randomness_canister_result: CanisterResult<blob> = yield ManagementCanister.raw_rand();
 
     if (randomness_canister_result.ok === undefined) {
         return {
@@ -116,13 +116,13 @@ function* perform_checks(
 
 function get_mutator(
     caller: Principal,
-    randomness: nat8[],
+    randomness: blob,
     description: string,
     destination_address: Address,
     amount: nat64
 ): DefaultMutator {
     return () => {
-        const id = sha224().update(randomness).digest('hex');
+        const id = sha224().update(Array.from(randomness)).digest('hex');
 
         state.transfer_proposals[id] = {
             id,

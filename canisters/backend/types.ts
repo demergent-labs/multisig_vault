@@ -1,5 +1,6 @@
 import {
     Async,
+    blob,
     Principal,
     Variant,
     nat64,
@@ -129,7 +130,7 @@ export type VoteOnTransferProposalChecksResult = Variant<{
 
 export type ProposeTransferChecksResult = Variant<{
     ok: {
-        randomness: nat8[];
+        randomness: blob;
     };
     err: string;
 }>;
@@ -193,6 +194,6 @@ type ControllersInfo = {
 };
 
 export type RandomnessResult = Variant<{
-    ok: nat8[];
+    ok: blob;
     err: string;
 }>;

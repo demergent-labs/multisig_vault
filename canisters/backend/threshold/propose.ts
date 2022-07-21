@@ -1,4 +1,5 @@
 import {
+    blob,
     ic,
     ok,
     nat8,
@@ -86,12 +87,12 @@ function perform_checks(
 
 function get_mutator(
     caller: Principal,
-    randomness: nat8[],
+    randomness: blob,
     description: string,
     threshold: nat8
 ): DefaultMutator {
     return () => {
-        const id = sha224().update(randomness).digest('hex');
+        const id = sha224().update(Array.from(randomness)).digest('hex');
 
         state.threshold_proposals[id] = {
             id,

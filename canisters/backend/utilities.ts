@@ -1,14 +1,14 @@
 import {
     Async,
+    blob,
     CanisterResult,
-    nat8,
     ok
 } from 'azle';
 import { ManagementCanister } from 'azle/canisters/management';
 import { RandomnessResult } from './types';
 
 export function* get_randomness(): Async<RandomnessResult> {
-    const randomness_canister_result: CanisterResult<nat8[]> = yield ManagementCanister.raw_rand();
+    const randomness_canister_result: CanisterResult<blob> = yield ManagementCanister.raw_rand();
 
     if (!ok(randomness_canister_result)) {
         return {
