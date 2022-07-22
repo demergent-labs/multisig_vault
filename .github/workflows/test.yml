@@ -19,7 +19,7 @@ jobs:
                   toolchain: stable
                   profile: minimal
                   override: true
-            - uses: Swatinem/rust-cache@v2
+            - uses: Swatinem/rust-cache@v2 # TODO The Rust cache is not working at all
             # - name: Rust cache # TODO I can't figure out how to actually get the cache to work
             #   uses: actions/cache@v2
             #   continue-on-error: false
