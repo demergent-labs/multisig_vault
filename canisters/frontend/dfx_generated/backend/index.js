@@ -35,4 +35,4 @@ export const canisterId = process.env.BACKEND_CANISTER_ID;
  * A ready-to-use agent for the backend canister
  * @type {import("@dfinity/agent").ActorSubclass<import("./backend.did.js")._SERVICE>}
  */
- export const backend = createActor(canisterId);
+//  export const backend = createActor(canisterId);

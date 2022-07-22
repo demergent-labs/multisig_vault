@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "build": "dfx generate backend && cd canisters/frontend && npm install && npm run build",
+        "build": "dfx generate backend && ./modify_last_line.sh canisters/frontend/dfx_generated && cd canisters/frontend && npm install && npm run build",
         "typecheck": "tsc --noEmit",
         "test": "ts-node --transpile-only --ignore=false test/test.ts",
         "prepare": "husky install"
