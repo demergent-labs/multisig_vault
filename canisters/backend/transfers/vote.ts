@@ -1,4 +1,4 @@
-import { CanisterResult, ic, ok, Principal, UpdateAsync } from 'azle';
+import { CanisterResult, ic, ok, Principal, Update } from 'azle';
 import {
     binary_address_from_address,
     TransferFee,
@@ -18,7 +18,7 @@ import {
 export function* vote_on_transfer_proposal(
     transfer_proposal_id: string,
     adopt: boolean
-): UpdateAsync<VoteOnTransferProposalResult> {
+): Update<VoteOnTransferProposalResult> {
     const caller = ic.caller();
 
     const checks_result = perform_checks(

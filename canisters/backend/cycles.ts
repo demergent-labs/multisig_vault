@@ -1,4 +1,4 @@
-import { CanisterResult, ic, nat64, Principal, Query, UpdateAsync } from 'azle';
+import { CanisterResult, ic, nat64, Principal, Query, Update } from 'azle';
 import {
     CanisterStatusResult,
     ManagementCanister
@@ -52,7 +52,7 @@ export function get_cycle_stats_info(): Query<CycleStatsInfo> {
     };
 }
 
-export function* snapshot_cycles(): UpdateAsync<DefaultResult> {
+export function* snapshot_cycles(): Update<DefaultResult> {
     const canister_result: CanisterResult<CanisterStatusResult> =
         yield ManagementCanister.canister_status({
             canister_id: Principal.fromText(process.env.FRONTEND_CANISTER_ID)

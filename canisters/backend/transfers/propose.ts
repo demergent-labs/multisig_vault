@@ -6,7 +6,7 @@ import {
     ok,
     nat64,
     Principal,
-    UpdateAsync
+    Update
 } from 'azle';
 import {
     binary_address_from_principal,
@@ -28,7 +28,7 @@ export function* propose_transfer(
     description: string,
     destination_address: string,
     amount: nat64
-): UpdateAsync<DefaultResult> {
+): Update<DefaultResult> {
     const caller = ic.caller();
 
     const checks_result: ProposeTransferChecksResult = yield perform_checks(

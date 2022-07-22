@@ -5,7 +5,7 @@ import {
     nat8,
     Principal,
     Query,
-    UpdateAsync
+    Update
 } from 'azle';
 import {
     binary_address_from_principal,
@@ -68,7 +68,7 @@ export function init(signers: Principal[], threshold: nat8): Init {
     state.threshold = threshold;
 }
 
-export function* get_vault_balance(): UpdateAsync<VaultBalanceResult> {
+export function* get_vault_balance(): Update<VaultBalanceResult> {
     const account_balance_canister_result: CanisterResult<Tokens> =
         yield ICPCanister.account_balance({
             account: binary_address_from_principal(ic.id(), 0)
@@ -99,7 +99,7 @@ export function get_address_from_principal(
     return hex_address_from_principal(principal, 0);
 }
 
-export function* get_controllers_info(): UpdateAsync<ControllersInfoResult> {
+export function* get_controllers_info(): Update<ControllersInfoResult> {
     const frontend_canister_result: CanisterResult<CanisterStatusResult> =
         yield ManagementCanister.canister_status({
             canister_id: Principal.fromText(process.env.FRONTEND_CANISTER_ID)

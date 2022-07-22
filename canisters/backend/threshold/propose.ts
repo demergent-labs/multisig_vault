@@ -1,4 +1,4 @@
-import { blob, ic, ok, nat8, Principal, UpdateAsync } from 'azle';
+import { blob, ic, ok, nat8, Principal, Update } from 'azle';
 import { state } from '../backend';
 import { sha224 } from 'hash.js';
 import { is_signer } from '../signers';
@@ -13,7 +13,7 @@ import { get_randomness } from '../utilities';
 export function* propose_threshold(
     description: string,
     threshold: nat8
-): UpdateAsync<DefaultResult> {
+): Update<DefaultResult> {
     const caller = ic.caller();
 
     const checks_result = perform_checks(caller, threshold, state.signers);

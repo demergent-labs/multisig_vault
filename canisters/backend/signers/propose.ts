@@ -1,4 +1,4 @@
-import { blob, ic, ok, Principal, UpdateAsync } from 'azle';
+import { blob, ic, ok, Principal, Update } from 'azle';
 import { state } from '../backend';
 import { sha224 } from 'hash.js';
 import { is_signer } from './index';
@@ -14,7 +14,7 @@ export function* propose_signer(
     description: string,
     signer: Principal,
     remove: boolean
-): UpdateAsync<DefaultResult> {
+): Update<DefaultResult> {
     const caller = ic.caller();
     const checks_result = perform_checks(caller, state.signers, signer, remove);
 
