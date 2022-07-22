@@ -2,5 +2,5 @@
 target
 node_modules
 build
-canisters/icp_ledger
-canisters/internet_identity
+canisters/icp_ledger/*.wasm
+canisters/internet_identity/*.wasm

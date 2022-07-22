@@ -1,0 +1,36 @@
+name: Multisig Vault Tests
+on:
+    push:
+        branches:
+            - main
+    pull_request: # Runs on pull requests to any branch
+jobs:
+    basic-integration-tests:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: 18
+            - run: DFX_VERSION=0.11.0 sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+            - name: Install Rust ${{ matrix.rust }}
+              uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
+                  profile: minimal
+                  override: true
+            - uses: Swatinem/rust-cache@v2 # TODO The Rust cache is not working at all
+            # - name: Rust cache # TODO I can't figure out how to actually get the cache to work
+            #   uses: actions/cache@v2
+            #   continue-on-error: false
+            #   with:
+            #       path: target
+            #       key: multisig_vault_cache_${{ hashFiles('target/azle/Cargo.lock') }}
+            #       # restore-keys: multisig_vault-cache # TODO might need to be more intelligent and hash files here
+            - run: dfx start --clean --background
+            - shell: bash -l {0}
+              run: npm install
+            - shell: bash -l {0}
+              run: cd canisters/frontend && npm install
+            - shell: bash -l {0}
+              run: npm test

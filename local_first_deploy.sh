@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # backend canister
 dfx canister create backend
 dfx build backend

@@ -65,4 +65,4 @@ dfx canister --network ic update-settings --add-controller $(dfx canister id bac
 # TODO not yet sure what this command is
 ```
 
-TODO test
+TODO
