@@ -31,4 +31,6 @@ jobs:
             - shell: bash -l {0}
               run: npm install
             - shell: bash -l {0}
+              run: cd canisters/frontend && npm install
+            - shell: bash -l {0}
               run: npm test
