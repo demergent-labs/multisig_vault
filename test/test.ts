@@ -46,6 +46,10 @@ function get_setup(): Test[] {
                     stdio: 'inherit'
                 });
 
+                execSync(`dfx canister uninstall-code backend`, {
+                    stdio: 'inherit'
+                });
+
                 execSync(`dfx build backend`, {
                     stdio: 'inherit'
                 });
