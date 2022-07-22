@@ -69,6 +69,14 @@ function get_setup(): Test[] {
             skip: SKIP_DEPLOY
         },
         {
+            name: 'download Internet Identity canister Wasm',
+            prep: async () => {
+                execSync(`cd canisters/internet_identity && ./install.sh`, {
+                    stdio: 'inherit'
+                });
+            }
+        },
+        {
             name: 'deploy Internet Identity canister',
             prep: async () => {
                 execSync(`dfx deploy internet_identity --argument '(null)'`, {
@@ -76,6 +84,14 @@ function get_setup(): Test[] {
                 });
             },
             skip: SKIP_DEPLOY
+        },
+        {
+            name: 'download ICP Ledger canister',
+            prep: async () => {
+                execSync(`cd canisters/icp_ledger && ./install.sh`, {
+                    stdio: 'inherit'
+                });
+            }
         },
         {
             name: 'deploy ICP Ledger canister',

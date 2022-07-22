@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # frontend
 dfx deploy frontend
 
