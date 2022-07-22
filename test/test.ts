@@ -1,23 +1,30 @@
 import { run_tests, Test } from 'azle/test';
 import { createActor } from '../canisters/frontend/dfx_generated/backend';
-import { Principal } from '../canisters/frontend/node_modules/@dfinity/principal';
+import { Principal } from '@dfinity/principal';
 import { execSync } from 'child_process';
+import {
+    get_propose_signer_valid_tests,
+    get_propose_signer_invalid_tests,
+    get_vote_signer_valid_tests,
+    get_vote_signer_invalid_tests
+} from './signers';
 
-// TODO need to get ICP Ledger and Internet Identity canisters working in GitHub Actions
-
-const backend_canister = createActor('rrkah-fqaaa-aaaaa-aaaaq-cai', {
+export const backend_canister = createActor('rrkah-fqaaa-aaaaa-aaaaq-cai', {
     agentOptions: {
         host: 'http://127.0.0.1:8000'
     }
 });
 
-// TODO when deploying I keep getting timeouts
 const SKIP_DEPLOY = process.argv[2] === 'no-setup';
 
 const tests: Test[] = [
     ...get_setup(),
     ...initial_state_tests(),
-    ...get_address_from_principal_tests()
+    ...get_address_from_principal_tests(),
+    ...get_propose_signer_valid_tests(),
+    ...get_propose_signer_invalid_tests(),
+    ...get_vote_signer_valid_tests(),
+    ...get_vote_signer_invalid_tests()
 ];
 
 run_tests(tests);

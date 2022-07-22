@@ -10,7 +10,8 @@
         "hash.js": "1.1.7"
     },
     "devDependencies": {
-        "@dfinity/agent": "0.11.1",
+        "@dfinity/agent": "0.12.1",
+        "@dfinity/identity": "0.12.1",
         "eslint": "8.11.0",
         "eslint-config-prettier": "8.5.0",
         "husky": "7.0.4",
